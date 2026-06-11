@@ -1,5 +1,6 @@
 import os
 import re
+import certifi
 from hmac import compare_digest
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -66,6 +67,7 @@ def db_config():
     }
     if os.getenv("MERCADOFACIL_DB_SSL", "").lower() in {"1", "true", "sim", "yes"}:
         config.update(
+            ssl_ca=certifi.where(),
             ssl_verify_cert=True,
             ssl_verify_identity=True,
         )
