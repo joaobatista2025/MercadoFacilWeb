@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if produto else 'Novo' }} produto | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Produtos</p>
+        <h1>{{ 'Editar produto' if produto else 'Cadastrar produto' }}</h1>
+    </div>
+    <a class="button ghost" href="{{ url_for('produtos') }}">Voltar</a>
+</div>
+
+<form class="form-panel" method="post">
+    <div class="form-grid">
+        <label>
+            <span>Código do produto</span>
+            <input value="{{ produto.codigo if produto else 'Gerado automaticamente ao salvar' }}" disabled>
+        </label>
+        <label class="wide">
+            <span>Categoria *</span>
+            <input name="categoria" required maxlength="80" list="categorias-produto" value="{{ request.form.get('categoria', produto.categoria if produto else '') }}" placeholder="Ex.: Mercearia e Básicos">
+            <datalist id="categorias-produto">
+                <option value="Mercearia e Básicos">
+                <option value="Laticínios e Frios">
+                <option value="Carnes e Congelados">
+            </datalist>
+        </label>
+        <label class="full">
+            <span>Nome do produto *</span>
+            <input name="nome" required maxlength="100" value="{{ request.form.get('nome', produto.nome if produto else '') }}">
+        </label>
+        <label class="full">
+            <span>Descrição</span>
+            <input name="descricao" maxlength="200" value="{{ request.form.get('descricao', produto.descricao if produto and produto.descricao else '') }}">
+        </label>
+        <label>
+            <span>Preço de venda *</span>
+            <input name="preco" required inputmode="decimal" value="{{ request.form.get('preco', produto.preco if produto else '') }}" placeholder="0,00">
+        </label>
+        {% if produto %}
+        <label>
+            <span>Estoque atual</span>
+            <input value="{{ produto.quantidade_estoque }} unidade(s)" disabled>
+        </label>
+        {% endif %}
+        <label>
+            <span>Estoque mínimo *</span>
+            <input type="number" name="estoque_minimo" required min="0" value="{{ request.form.get('estoque_minimo', produto.estoque_minimo if produto else '0') }}">
+        </label>
+    </div>
+    <div class="form-actions">
+        <a class="button ghost" href="{{ url_for('produtos') }}">Cancelar</a>
+        <button class="button primary" type="submit">Salvar produto</button>
+    </div>
+</form>
+{% endblock %}

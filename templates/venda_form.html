@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Nova venda | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div><p class="eyebrow">Atendimento</p><h1>Nova venda</h1></div>
+    <a class="button ghost" href="{{ url_for('vendas') }}">Cancelar</a>
+</div>
+
+<form class="sale-layout" method="post" id="sale-form">
+    <section class="form-panel sale-main">
+        <label>
+            <span>Cliente</span>
+            <select name="id_cliente" id="customer-select">
+                <option value="">Consumidor final</option>
+                {% for cliente in clientes %}
+                <option
+                    value="{{ cliente.id_cliente }}"
+                    data-balance="{{ cliente.saldo_fidelidade|float }}"
+                    data-coupon-id="{{ cliente.id_cupom or '' }}"
+                    data-coupon-value="{{ cliente.valor_cupom|float if cliente.valor_cupom else 0 }}"
+                    data-coupon-expiry="{{ cliente.validade_cupom.isoformat() if cliente.validade_cupom else '' }}"
+                >{{ cliente.nome }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <section class="loyalty-panel" id="loyalty-panel" hidden>
+            <div class="loyalty-heading">
+                <div>
+                    <strong>Clube MercadoFácil</strong>
+                    <small id="loyalty-progress-text"></small>
+                </div>
+                <strong id="loyalty-balance">R$ 0,00</strong>
+            </div>
+            <div class="loyalty-progress" aria-hidden="true">
+                <span id="loyalty-progress-bar"></span>
+            </div>
+            <label class="coupon-offer" id="coupon-offer" hidden>
+                <input
+                    type="checkbox"
+                    name="id_cupom_fidelidade"
+                    id="loyalty-coupon"
+                    value=""
+                >
+                <span>
+                    <strong>Aplicar cupom de R$ 15</strong>
+                    <small id="coupon-description">Válido em compras a partir de R$ 150.</small>
+                </span>
+            </label>
+        </section>
+
+        <div class="section-heading compact">
+            <div><h2>Produtos da venda</h2><p>Escolha o produto e confirme o lote da embalagem</p></div>
+            <button class="button secondary" type="button" id="add-item">+ Adicionar item</button>
+        </div>
+
+        <div id="sale-items">
+            <div class="sale-row">
+                <div class="product-picker-field">
+                    <span>Produto</span>
+                    <button type="button" class="product-picker-button">
+                        <strong class="selected-product">Escolher produto</strong>
+                        <small>Clique para abrir o catálogo</small>
+                    </button>
+                </div>
+                <label class="lot-field">
+                    <span>Lote da embalagem</span>
+                    <select name="lote_id[]" class="lot-select" required disabled>
+                        <option value="">Escolha primeiro o produto</option>
+                    </select>
+                </label>
+                <label class="quantity-field">
+                    <span>Quantidade</span>
+                    <input type="number" name="quantidade[]" class="quantity-input" min="1" value="1" required>
+                </label>
+                <div class="line-total"><span>Subtotal</span><strong>R$ 0,00</strong></div>
+                <button type="button" class="remove-item" aria-label="Remover item" title="Remover item">×</button>
+            </div>
+        </div>
+    </section>
+
+    <aside class="sale-summary">
+        <span>Resumo da venda</span>
+        <div><small>Quantidade de itens</small><strong id="summary-items">0</strong></div>
+        <div class="summary-subtotal" id="summary-subtotal-row" hidden>
+            <small>Subtotal</small><strong id="summary-subtotal">R$ 0,00</strong>
+        </div>
+        <div class="summary-discount" id="summary-discount-row" hidden>
+            <small>Desconto fidelidade</small><strong id="summary-discount">-R$ 0,00</strong>
+        </div>
+        <div class="summary-total"><small>Total</small><strong id="summary-total">R$ 0,00</strong></div>
+        <label class="payment-field">
+            <span>Forma de pagamento</span>
+            <select name="forma_pagamento" id="payment-method" required>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="pix">PIX</option>
+                <option value="cartao">Cartão</option>
+            </select>
+        </label>
+        <label class="payment-field" id="cash-received-field">
+            <span>Valor recebido</span>
+            <input
+                type="number"
+                name="valor_recebido"
+                id="cash-received"
+                min="0.01"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="R$ 0,00"
+                required
+            >
+        </label>
+        <div class="change-total" id="change-total">
+            <small>Troco</small>
+            <strong id="summary-change">R$ 0,00</strong>
+        </div>
+        <button class="button primary full-button" type="submit" {% if not produtos %}disabled{% endif %}>Finalizar venda</button>
+        <p>Confira o código do lote impresso na embalagem antes de finalizar.</p>
+    </aside>
+</form>
+
+<div class="catalog-modal" id="product-catalog" aria-hidden="true">
+    <button class="catalog-backdrop" type="button" aria-label="Fechar catálogo"></button>
+    <section class="catalog-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-title">
+        <header class="catalog-header">
+            <div>
+                <p class="eyebrow">Catálogo</p>
+                <h2 id="catalog-title">Escolher produto</h2>
+            </div>
+            <button type="button" class="catalog-close" aria-label="Fechar catálogo" title="Fechar">×</button>
+        </header>
+        <div class="catalog-filters">
+            <label class="catalog-search">
+                <span>Pesquisar por código ou nome</span>
+                <input type="search" id="product-search" placeholder="Ex.: 001 ou arroz">
+            </label>
+            <label class="catalog-category">
+                <span>Categoria</span>
+                <select id="catalog-category">
+                    <option value="">Todas</option>
+                    <option value="mercearia e básicos">Mercearia e Básicos</option>
+                    <option value="laticínios e frios">Laticínios e Frios</option>
+                    <option value="carnes e congelados">Carnes e Congelados</option>
+                </select>
+            </label>
+        </div>
+        <p class="catalog-count"><strong id="product-count">{{ produtos|length }}</strong> produto(s) disponível(is)</p>
+        <div class="product-catalog-list" id="product-catalog-list">
+            {% for produto in produtos %}
+            <button
+                type="button"
+                class="product-catalog-item"
+                data-product-id="{{ produto.id_produto }}"
+                data-product-name="{{ produto.nome }}"
+                data-category="{{ produto.categoria|lower }}"
+                data-search="{{ produto.codigo|lower }} {{ produto.nome|lower }} {{ produto.categoria|lower }}"
+            >
+                <span>
+                    <strong>{{ produto.codigo }} · {{ produto.nome }}</strong>
+                    <small>{{ produto.total_lotes }} lote(s) · {{ produto.quantidade_estoque }} un. disponíveis</small>
+                </span>
+                <strong>{{ produto.preco|brl }}</strong>
+            </button>
+            {% endfor %}
+        </div>
+        <div class="catalog-empty" id="catalog-empty" hidden>Nenhum produto encontrado.</div>
+    </section>
+</div>
+
+<template id="sale-row-template">
+    <div class="sale-row">
+        <div class="product-picker-field">
+            <span>Produto</span>
+            <button type="button" class="product-picker-button">
+                <strong class="selected-product">Escolher produto</strong>
+                <small>Clique para abrir o catálogo</small>
+            </button>
+        </div>
+        <label class="lot-field">
+            <span>Lote da embalagem</span>
+            <select name="lote_id[]" class="lot-select" required disabled>
+                <option value="">Escolha primeiro o produto</option>
+            </select>
+        </label>
+        <label class="quantity-field">
+            <span>Quantidade</span>
+            <input type="number" name="quantidade[]" class="quantity-input" min="1" value="1" required>
+        </label>
+        <div class="line-total"><span>Subtotal</span><strong>R$ 0,00</strong></div>
+        <button type="button" class="remove-item" aria-label="Remover item" title="Remover item">×</button>
+    </div>
+</template>
+
+<script id="lots-data" type="application/json">
+[
+{% for lote in lotes %}
+  {
+    "id": {{ lote.id_lote }},
+    "productId": {{ lote.id_produto }},
+    "code": {{ lote.codigo_lote|tojson }},
+    "supplier": {{ (lote.fornecedor or 'Não informado')|tojson }},
+    "expiry": {{ (lote.data_validade.isoformat() if lote.data_validade else '')|tojson }},
+    "stock": {{ lote.quantidade }},
+    "price": {{ lote.preco|float }}
+  }{{ ',' if not loop.last }}
+{% endfor %}
+]
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Produtos | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div><p class="eyebrow">Catálogo e estoque</p><h1>Produtos</h1></div>
+    <a class="button primary" href="{{ url_for('produto_novo') }}">+ Novo produto</a>
+</div>
+
+<form class="toolbar" method="get">
+    <label class="search-field">
+        <span>Buscar produto</span>
+        <input type="search" name="q" value="{{ busca }}" placeholder="Digite o código ou nome" data-live-table-search="#products-table">
+    </label>
+    <label class="filter-field">
+        <span>Categoria</span>
+        <select name="categoria" data-live-category="#products-table">
+            <option value="">Todas</option>
+            {% for item in categorias %}
+            <option value="{{ item }}" {{ 'selected' if categoria == item }}>{{ item }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label class="filter-field">
+        <span>Situação</span>
+        <select name="situacao" data-live-status="#products-table">
+            <option value="">Todos</option>
+            <option value="estoque_baixo" {{ 'selected' if situacao == 'estoque_baixo' }}>Estoque baixo</option>
+            <option value="vencendo" {{ 'selected' if situacao == 'vencendo' }}>Vencendo em 30 dias</option>
+            <option value="vencido" {{ 'selected' if situacao == 'vencido' }}>Vencidos</option>
+        </select>
+    </label>
+    {% if busca or categoria or situacao %}<a class="button ghost" href="{{ url_for('produtos') }}">Limpar</a>{% endif %}
+</form>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table id="products-table">
+            <thead>
+                <tr><th>Produto</th><th>Preço</th><th>Estoque</th><th>Lotes</th><th>Próxima validade</th><th>Status</th><th class="actions">Ações</th></tr>
+            </thead>
+            <tbody>
+            {% for produto in produtos %}
+                <tr
+                    data-search="{{ produto.codigo }} {{ produto.nome }}"
+                    data-category="{{ produto.categoria }}"
+                    data-status="{% if produto.quantidade_estoque <= produto.estoque_minimo %} estoque_baixo{% endif %}{% if produto.dias_validade is not none and produto.dias_validade < 0 %} vencido{% elif produto.dias_validade is not none and produto.dias_validade <= 30 %} vencendo{% endif %}"
+                >
+                    <td>
+                        <strong>{{ produto.nome }}</strong>
+                        <small class="cell-note">{{ produto.codigo }} · {{ produto.categoria }}</small>
+                    </td>
+                    <td>{{ produto.preco|brl }}</td>
+                    <td>{{ produto.quantidade_estoque }}</td>
+                    <td>{{ produto.total_lotes }}</td>
+                    <td>
+                        {% if not produto.proxima_validade %}
+                        <span class="muted">Não informada</span>
+                        {% elif produto.dias_validade < 0 %}
+                        <span class="badge danger">{{ produto.proxima_validade.strftime('%d/%m/%Y') }} · Vencido</span>
+                        {% elif produto.dias_validade <= 30 %}
+                        <span class="badge warning">{{ produto.proxima_validade.strftime('%d/%m/%Y') }}</span>
+                        {% else %}
+                        {{ produto.proxima_validade.strftime('%d/%m/%Y') }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if produto.quantidade_estoque <= produto.estoque_minimo %}
+                        <span class="badge danger">Estoque baixo</span>
+                        {% else %}
+                        <span class="badge ok">Normal</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions">
+                        <a class="icon-action" href="{{ url_for('lote_novo', produto=produto.id_produto) }}">+ Lote</a>
+                        <a class="icon-action" href="{{ url_for('produto_editar', id_produto=produto.id_produto) }}" title="Editar produto">Editar</a>
+                        <form method="post" action="{{ url_for('produto_excluir', id_produto=produto.id_produto) }}" data-confirm="Excluir este produto?">
+                            <button class="icon-action danger-text" type="submit">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7" class="empty-cell">Nenhum produto encontrado.</td></tr>
+            {% endfor %}
+                <tr id="products-empty-live" hidden><td colspan="7" class="empty-cell">Nenhum produto corresponde à pesquisa.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

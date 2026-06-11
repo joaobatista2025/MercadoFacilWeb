@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Início | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Visão geral</p>
+        <h1>Resumo de hoje</h1>
+    </div>
+    <span class="date-label">{{ now if now else '' }}</span>
+</div>
+
+<section class="metrics" aria-label="Indicadores de hoje">
+    <article class="metric">
+        <span>Faturamento</span>
+        <strong>{{ resumo.faturamento|brl }}</strong>
+        <small>vendas realizadas hoje</small>
+    </article>
+    <article class="metric">
+        <span>Número de vendas</span>
+        <strong>{{ resumo.total_vendas }}</strong>
+        <small>atendimentos concluídos</small>
+    </article>
+    <article class="metric">
+        <span>Produtos cadastrados</span>
+        <strong>{{ total_produtos }}</strong>
+        <small>itens no catálogo</small>
+    </article>
+    <article class="metric {{ 'warning' if baixo_estoque else '' }}">
+        <span>Estoque baixo</span>
+        <strong>{{ baixo_estoque }}</strong>
+        <small>produtos precisam de atenção</small>
+    </article>
+    <article class="metric {{ 'danger' if validade_alertas else '' }}">
+        <span>Validade próxima</span>
+        <strong>{{ validade_alertas }}</strong>
+        <small>vencidos ou vencendo em 30 dias</small>
+    </article>
+</section>
+
+<div class="two-columns">
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <h2>Vendas recentes</h2>
+                <p>Últimos registros do sistema</p>
+            </div>
+            <a href="{{ url_for('vendas') }}">Ver todas</a>
+        </div>
+        {% if vendas_recentes %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Venda</th><th>Cliente</th><th>Data</th><th class="number">Total</th></tr></thead>
+                <tbody>
+                {% for venda in vendas_recentes %}
+                    <tr>
+                        <td>#{{ venda.id_venda }}</td>
+                        <td>{{ venda.cliente }}</td>
+                        <td>{{ venda.data_venda.strftime('%d/%m %H:%M') }}</td>
+                        <td class="number strong">{{ venda.valor_total|brl }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">Nenhuma venda registrada ainda.</div>
+        {% endif %}
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <h2>Alertas de estoque</h2>
+                <p>Itens no limite ou abaixo do mínimo</p>
+            </div>
+            <a href="{{ url_for('produtos') }}">Abrir estoque</a>
+        </div>
+        {% if alertas %}
+        <ul class="stock-list">
+            {% for produto in alertas %}
+            <li>
+                <div>
+                    <strong>{{ produto.nome }}</strong>
+                    <span>Mínimo: {{ produto.estoque_minimo }}</span>
+                </div>
+                <span class="badge danger">{{ produto.quantidade_estoque }} un.</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state success">Estoque dentro dos níveis definidos.</div>
+        {% endif %}
+    </section>
+</div>
+
+<section class="panel expiry-panel">
+    <div class="section-heading">
+        <div>
+            <h2>Controle de validade</h2>
+            <p>Produtos vencidos ou com até 30 dias para vencer</p>
+        </div>
+        <a href="{{ url_for('lotes', situacao='vencendo') }}">Ver lotes</a>
+    </div>
+    {% if alertas_validade %}
+    <ul class="expiry-list">
+        {% for produto in alertas_validade %}
+        <li>
+            <strong>{{ produto.nome }} · Lote {{ produto.codigo_lote }}</strong>
+            <span>{{ produto.data_validade.strftime('%d/%m/%Y') }} · {{ produto.quantidade }} un.</span>
+            {% if produto.dias_restantes < 0 %}
+            <span class="badge danger">Vencido há {{ produto.dias_restantes|abs }} dia(s)</span>
+            {% elif produto.dias_restantes == 0 %}
+            <span class="badge danger">Vence hoje</span>
+            {% else %}
+            <span class="badge warning">Vence em {{ produto.dias_restantes }} dia(s)</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state success">Nenhum produto próximo do vencimento.</div>
+    {% endif %}
+</section>
+{% endblock %}

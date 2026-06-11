@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Comprovante da venda #{{ venda.id_venda }} | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading receipt-actions">
+    <div>
+        <p class="eyebrow">Venda concluída</p>
+        <h1>Comprovante #{{ venda.id_venda }}</h1>
+    </div>
+    <div class="button-group">
+        <a class="button ghost" href="{{ url_for('vendas') }}">Voltar ao histórico</a>
+        <button class="button ghost" type="button" onclick="window.print()">Imprimir</button>
+        <a class="button primary" href="{{ url_for('venda_comprovante_pdf', id_venda=venda.id_venda) }}">Baixar PDF</a>
+        {% if email_url %}
+        <a class="button secondary" href="{{ email_url }}">E-mail</a>
+        {% endif %}
+        {% if whatsapp_url %}
+        <a class="button secondary" href="{{ whatsapp_url }}" target="_blank" rel="noopener">WhatsApp</a>
+        {% endif %}
+    </div>
+</div>
+
+<article class="receipt">
+    <header class="receipt-header">
+        <div>
+            <span class="brand-mark">MF</span>
+            <div><strong>MercadoFácil</strong><small>Comprovante de venda</small></div>
+        </div>
+        <span class="badge {{ 'danger' if venda.status == 'cancelada' else 'ok' }}">
+            {{ 'Venda cancelada' if venda.status == 'cancelada' else 'Venda concluída' }}
+        </span>
+    </header>
+
+    <dl class="receipt-info">
+        <div><dt>Venda</dt><dd>#{{ venda.id_venda }}</dd></div>
+        <div><dt>Data</dt><dd>{{ venda.data_venda.strftime('%d/%m/%Y às %H:%M') }}</dd></div>
+        <div><dt>Cliente</dt><dd>{{ venda.cliente }}</dd></div>
+        <div><dt>Pagamento</dt><dd>{{ forma_pagamento }}</dd></div>
+    </dl>
+
+    <div class="table-wrap">
+        <table class="receipt-table">
+            <thead><tr><th>Produto</th><th>Lote</th><th class="number">Qtd.</th><th class="number">Unitário</th><th class="number">Subtotal</th></tr></thead>
+            <tbody>
+            {% for item in itens %}
+                <tr>
+                    <td><strong>{{ item.codigo }} · {{ item.nome }}</strong></td>
+                    <td>{{ item.codigo_lote or '-' }}</td>
+                    <td class="number">{{ item.quantidade }}</td>
+                    <td class="number">{{ item.preco_unitario|brl }}</td>
+                    <td class="number strong">{{ item.subtotal|brl }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <footer class="receipt-totals">
+        {% if venda.desconto_fidelidade %}
+        <div><span>Subtotal</span><strong>{{ venda.valor_bruto|brl }}</strong></div>
+        <div><span>Desconto fidelidade</span><strong>-{{ venda.desconto_fidelidade|brl }}</strong></div>
+        {% endif %}
+        {% if venda.forma_pagamento == 'dinheiro' %}
+        <div><span>Valor recebido</span><strong>{{ venda.valor_recebido|brl }}</strong></div>
+        <div><span>Troco</span><strong>{{ venda.troco|brl }}</strong></div>
+        {% endif %}
+        <div class="receipt-grand-total"><span>Total</span><strong>{{ venda.valor_total|brl }}</strong></div>
+    </footer>
+
+    {% if venda.id_cliente %}
+    <section class="receipt-loyalty">
+        <h2>Clube MercadoFácil</h2>
+        {% if venda.status == 'cancelada' %}
+        <p>Esta venda foi cancelada e não conta para a fidelidade.</p>
+        {% else %}
+            {% if cupons_gerados %}
+            <p><strong>Parabéns!</strong> Esta compra gerou {{ cupons_gerados|length }} cupom(ns) de R$ 15, válido(s) por 30 dias.</p>
+            {% endif %}
+            {% if venda.id_cupom_fidelidade %}
+            <p>Desconto utilizado nesta compra: <strong>{{ venda.desconto_fidelidade|brl }}</strong>.</p>
+            {% endif %}
+            <p>Acumulado: <strong>{{ saldo_fidelidade|brl }}</strong> de {{ meta_fidelidade|brl }}.</p>
+            <p>Faltam <strong>{{ faltam_fidelidade|brl }}</strong> para o próximo cupom.</p>
+            {% if cupons_disponiveis.total %}
+            <p>Cupons disponíveis: <strong>{{ cupons_disponiveis.total }}</strong>. Próxima validade: {{ cupons_disponiveis.proxima_validade.strftime('%d/%m/%Y') }}.</p>
+            {% endif %}
+            <small>Cada cupom vale R$ 15, por 30 dias, em compras a partir de R$ 150.</small>
+        {% endif %}
+    </section>
+    {% endif %}
+</article>
+{% if whatsapp_url or email_url %}
+<p class="share-note">Baixe o PDF e anexe-o manualmente ao WhatsApp ou e-mail. Esse processo é gratuito e não utiliza serviços pagos.</p>
+{% endif %}
+{% endblock %}

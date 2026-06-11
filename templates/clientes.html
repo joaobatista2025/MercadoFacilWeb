@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Clientes | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div><p class="eyebrow">Relacionamento</p><h1>Clientes</h1></div>
+    <a class="button primary" href="{{ url_for('cliente_novo') }}">+ Novo cliente</a>
+</div>
+
+<form class="toolbar" method="get">
+    <label class="search-field">
+        <span>Buscar cliente</span>
+        <input type="search" name="q" value="{{ busca }}" placeholder="Digite parte do nome">
+    </label>
+    <button class="button secondary" type="submit">Buscar</button>
+    {% if busca %}<a class="button ghost" href="{{ url_for('clientes') }}">Limpar</a>{% endif %}
+</form>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Contato</th>
+                    <th>Total em compras</th>
+                    <th>Fidelidade</th>
+                    <th>Benefícios</th>
+                    <th class="actions">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for cliente in clientes %}
+                <tr>
+                    <td>
+                        <strong>{{ cliente.nome }}</strong>
+                        <small class="cell-note">{{ cliente.endereco or 'Endereço não informado' }}</small>
+                    </td>
+                    <td>
+                        {{ cliente.telefone or 'Telefone não informado' }}
+                        <small class="cell-note">{{ cliente.email or 'E-mail não informado' }}</small>
+                    </td>
+                    <td>
+                        <strong>{{ cliente.total_gasto|brl }}</strong>
+                        <small class="cell-note">
+                            {{ cliente.compras_concluidas }}
+                            {{ 'compra concluída' if cliente.compras_concluidas == 1 else 'compras concluídas' }}
+                        </small>
+                    </td>
+                    <td class="client-loyalty-cell">
+                        <div>
+                            <strong>{{ cliente.saldo_fidelidade|brl }}</strong>
+                            <small>de {{ meta_fidelidade|brl }}</small>
+                        </div>
+                        <div class="client-progress" aria-hidden="true">
+                            <span style="width: {{ [100, (cliente.saldo_fidelidade / meta_fidelidade * 100)]|min }}%"></span>
+                        </div>
+                        <small>
+                            Faltam {{ ([0, meta_fidelidade - cliente.saldo_fidelidade]|max)|brl }}
+                        </small>
+                    </td>
+                    <td>
+                        {% if cliente.cupons_disponiveis %}
+                        <span class="badge ok">
+                            {{ cliente.cupons_disponiveis }}
+                            {{ 'cupom disponível' if cliente.cupons_disponiveis == 1 else 'cupons disponíveis' }}
+                        </span>
+                        <small class="cell-note">Validade mais próxima: {{ cliente.proxima_validade.strftime('%d/%m/%Y') }}</small>
+                        {% else %}
+                        <span class="badge neutral">Nenhum cupom</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions">
+                        <a class="icon-action" href="{{ url_for('cliente_editar', id_cliente=cliente.id_cliente) }}">Editar</a>
+                        <form method="post" action="{{ url_for('cliente_excluir', id_cliente=cliente.id_cliente) }}" data-confirm="Excluir este cliente?">
+                            <button class="icon-action danger-text" type="submit">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="empty-cell">Nenhum cliente encontrado.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

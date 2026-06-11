@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Fechamento de caixa | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div><p class="eyebrow">Relatório diário</p><h1>Fechamento de caixa</h1></div>
+    <form class="date-filter" method="get">
+        <label><span>Data</span><input type="date" name="data" value="{{ data_selecionada }}"></label>
+        <button class="button secondary" type="submit">Consultar</button>
+    </form>
+</div>
+
+<section class="metrics three">
+    <article class="metric"><span>Faturamento</span><strong>{{ resumo.faturamento|brl }}</strong><small>total do período</small></article>
+    <article class="metric"><span>Vendas realizadas</span><strong>{{ resumo.total_vendas }}</strong><small>atendimentos concluídos</small></article>
+    <article class="metric"><span>Ticket médio</span><strong>{{ resumo.ticket_medio|brl }}</strong><small>valor médio por venda</small></article>
+</section>
+
+<section class="panel">
+    <div class="section-heading"><div><h2>Produtos vendidos</h2><p>Desempenho por produto na data selecionada</p></div></div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Produto</th><th>Quantidade</th><th class="number">Faturamento</th></tr></thead>
+            <tbody>
+            {% for item in itens %}
+                <tr><td><strong>{{ item.nome }}</strong></td><td>{{ item.quantidade }}</td><td class="number strong">{{ item.faturamento|brl }}</td></tr>
+            {% else %}
+                <tr><td colspan="3" class="empty-cell">Nenhuma venda encontrada nesta data.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

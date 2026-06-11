@@ -1,0 +1,37 @@
+MERCADOFACIL WEB - VERSAO ATUAL
+================================
+
+Esta e a nova versao do sistema MercadoFacil.
+
+Ela utiliza:
+- Aplicacao web em Python e Flask;
+- Banco de dados relacional MySQL;
+- Tabelas de clientes, produtos, vendas e itens da venda;
+- Cadastro, consulta, edicao e exclusao;
+- Controle de varios lotes e fornecedores por produto;
+- Cada lote possui codigo real, quantidade, entrada e validade;
+- Na venda, o operador escolhe o lote exato impresso na embalagem;
+- O lote com validade mais proxima aparece primeiro como orientacao;
+- Produtos possuem codigo numerico unico no formato 001;
+- Novos produtos recebem automaticamente o proximo codigo disponivel;
+- Categorias sao usadas apenas para organizar e filtrar;
+- Pesquisa instantanea por codigo ou nome;
+- Venda com baixa automatica do estoque;
+- Transacoes com commit e rollback;
+- Fechamento diario de caixa.
+- Programa de fidelidade para clientes cadastrados;
+- Cupom de R$ 15 a cada R$ 500 pagos, valido por 30 dias;
+- Comprovante em PDF gerado gratuitamente no proprio computador;
+- Atalhos para WhatsApp e e-mail, com anexo manual do PDF.
+
+O sistema NAO utiliza arquivos clientes.txt, vendas.txt ou estoque.txt para
+armazenar os dados.
+
+Os arquivos antigos existentes em outras pastas do pendrive nao fazem parte
+desta versao.
+
+Para iniciar localmente:
+1. Verifique se Python 3 e MySQL 8 estao instalados.
+2. Execute CONFIGURAR_BANCO.bat na primeira utilizacao.
+3. Execute INICIAR_SITE.bat.
+4. Acesse http://localhost:5000

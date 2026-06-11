@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if cliente else 'Novo' }} cliente | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Clientes</p>
+        <h1>{{ 'Editar cliente' if cliente else 'Cadastrar cliente' }}</h1>
+    </div>
+    <a class="button ghost" href="{{ url_for('clientes') }}">Voltar</a>
+</div>
+
+<form class="form-panel" method="post">
+    <div class="form-grid">
+        <label class="full">
+            <span>Nome completo *</span>
+            <input name="nome" required maxlength="100" value="{{ request.form.get('nome', cliente.nome if cliente else '') }}">
+        </label>
+        <label>
+            <span>Telefone</span>
+            <input name="telefone" maxlength="20" value="{{ request.form.get('telefone', cliente.telefone if cliente and cliente.telefone else '') }}" placeholder="(85) 99999-9999">
+        </label>
+        <label>
+            <span>E-mail</span>
+            <input type="email" name="email" maxlength="150" value="{{ request.form.get('email', cliente.email if cliente and cliente.email else '') }}" placeholder="cliente@exemplo.com">
+        </label>
+        <label class="full">
+            <span>Endereço</span>
+            <input name="endereco" maxlength="150" value="{{ request.form.get('endereco', cliente.endereco if cliente and cliente.endereco else '') }}">
+        </label>
+    </div>
+    <div class="form-actions">
+        <a class="button ghost" href="{{ url_for('clientes') }}">Cancelar</a>
+        <button class="button primary" type="submit">Salvar cliente</button>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Lotes | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div><p class="eyebrow">Entrada e validade</p><h1>Lotes de produtos</h1></div>
+    <a class="button primary" href="{{ url_for('lote_novo') }}">+ Receber lote</a>
+</div>
+
+<form class="toolbar" method="get">
+    <label class="search-field">
+        <span>Buscar produto ou lote</span>
+        <input type="search" name="q" value="{{ busca }}" placeholder="Produto, lote ou fornecedor">
+    </label>
+    <label class="filter-field">
+        <span>Situação</span>
+        <select name="situacao">
+            <option value="">Todos</option>
+            <option value="ativos" {{ 'selected' if situacao == 'ativos' }}>Com estoque</option>
+            <option value="vencendo" {{ 'selected' if situacao == 'vencendo' }}>Vencendo em 30 dias</option>
+            <option value="vencidos" {{ 'selected' if situacao == 'vencidos' }}>Vencidos</option>
+            <option value="esgotados" {{ 'selected' if situacao == 'esgotados' }}>Esgotados</option>
+        </select>
+    </label>
+    <button class="button secondary" type="submit">Buscar</button>
+    {% if busca or situacao %}<a class="button ghost" href="{{ url_for('lotes') }}">Limpar</a>{% endif %}
+</form>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Produto</th><th>Lote</th><th>Fornecedor</th><th>Entrada</th><th>Validade</th><th>Quantidade</th><th>Situação</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for lote in lotes %}
+                <tr>
+                    <td><strong>{{ lote.produto }}</strong><small class="cell-note">{{ lote.codigo_produto }}</small></td>
+                    <td>{{ lote.codigo_lote }}</td>
+                    <td>{{ lote.fornecedor or 'Não informado' }}</td>
+                    <td>{{ lote.data_entrada.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ lote.data_validade.strftime('%d/%m/%Y') if lote.data_validade else 'Não informada' }}</td>
+                    <td>{{ lote.quantidade }}</td>
+                    <td>
+                        {% if lote.quantidade == 0 %}
+                        <span class="badge neutral">Esgotado</span>
+                        {% elif lote.dias_validade is not none and lote.dias_validade < 0 %}
+                        <span class="badge danger">Vencido</span>
+                        {% elif lote.dias_validade is not none and lote.dias_validade <= 30 %}
+                        <span class="badge warning">Vence em {{ lote.dias_validade }} dia(s)</span>
+                        {% else %}
+                        <span class="badge ok">Disponível</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions"><a class="icon-action" href="{{ url_for('lote_editar', id_lote=lote.id_lote) }}">Editar/corrigir</a></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="8" class="empty-cell">Nenhum lote encontrado.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

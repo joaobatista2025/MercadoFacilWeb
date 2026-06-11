@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Entrar | MercadoFácil</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-body">
+    <main class="login-shell">
+        <section class="login-panel">
+            <header class="login-brand">
+                <span class="brand-mark">MF</span>
+                <div>
+                    <strong>MercadoFácil</strong>
+                    <small>Acesso ao sistema</small>
+                </div>
+            </header>
+
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% for categoria, mensagem in mensagens %}
+                    <div class="alert {{ categoria }}" role="alert">{{ mensagem }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="post" class="login-form">
+                <input type="hidden" name="next" value="{{ next }}">
+                <label>
+                    <span>Usuário</span>
+                    <input
+                        type="text"
+                        name="usuario"
+                        autocomplete="username"
+                        required
+                        autofocus
+                    >
+                </label>
+                <label>
+                    <span>Senha</span>
+                    <input
+                        type="password"
+                        name="senha"
+                        autocomplete="current-password"
+                        required
+                    >
+                </label>
+                <button class="button primary full-button" type="submit">Entrar</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

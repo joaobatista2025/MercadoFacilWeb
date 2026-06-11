@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}MercadoFácil{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('dashboard') }}" aria-label="MercadoFácil - início">
+            <span class="brand-mark">MF</span>
+            <span>MercadoFácil</span>
+        </a>
+        <button class="menu-button" type="button" aria-label="Abrir menu" aria-expanded="false">☰</button>
+        <a class="button primary top-action" href="{{ url_for('venda_nova') }}">+ Nova venda</a>
+        <nav class="main-nav" aria-label="Navegação principal">
+            <a href="{{ url_for('venda_nova') }}" class="mobile-sale-link {{ 'active' if request.endpoint == 'venda_nova' }}">+ Nova venda</a>
+            <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Início</a>
+            <a href="{{ url_for('produtos') }}" class="{{ 'active' if request.endpoint in ['produtos', 'produto_novo', 'produto_editar'] }}">Produtos</a>
+            <a href="{{ url_for('lotes') }}" class="{{ 'active' if request.endpoint in ['lotes', 'lote_novo', 'lote_editar'] }}">Lotes</a>
+            <a href="{{ url_for('clientes') }}" class="{{ 'active' if request.endpoint in ['clientes', 'cliente_novo', 'cliente_editar'] }}">Clientes</a>
+            <a href="{{ url_for('vendas') }}" class="{{ 'active' if request.endpoint in ['vendas', 'venda_nova'] }}">Vendas</a>
+            <a href="{{ url_for('caixa') }}" class="{{ 'active' if request.endpoint == 'caixa' }}">Caixa</a>
+            <form class="logout-form" method="post" action="{{ url_for('logout') }}">
+                <button type="submit">Sair</button>
+            </form>
+        </nav>
+    </header>
+
+    <main class="page">
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% for categoria, mensagem in mensagens %}
+                <div class="alert {{ categoria }}" role="alert">{{ mensagem }}</div>
+            {% endfor %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

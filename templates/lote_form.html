@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if lote else 'Receber' }} lote | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div><p class="eyebrow">Controle de estoque</p><h1>{{ 'Editar lote' if lote else 'Receber novo lote' }}</h1></div>
+    <a class="button ghost" href="{{ url_for('lotes') }}">Voltar</a>
+</div>
+
+<form class="form-panel" method="post">
+    <div class="form-grid">
+        <label class="full">
+            <span>Produto *{% if lote and lote.possui_vendas %} (bloqueado após venda){% endif %}</span>
+            <select name="id_produto" required {{ 'disabled' if lote and lote.possui_vendas }}>
+                <option value="">Selecione o produto</option>
+                {% for produto in produtos %}
+                <option
+                    value="{{ produto.id_produto }}"
+                    {{ 'selected' if (
+                        request.form.get('id_produto')|int == produto.id_produto
+                        or (not request.form.get('id_produto') and lote and lote.id_produto == produto.id_produto)
+                        or (not lote and request.args.get('produto')|int == produto.id_produto)
+                    ) }}
+                >{{ produto.codigo }} · {{ produto.nome }}</option>
+                {% endfor %}
+            </select>
+            {% if lote and lote.possui_vendas %}
+            <input type="hidden" name="id_produto" value="{{ lote.id_produto }}">
+            {% endif %}
+        </label>
+        <label>
+            <span>Código do lote *</span>
+            <input name="codigo_lote" required maxlength="50" value="{{ request.form.get('codigo_lote', lote.codigo_lote if lote else '') }}" placeholder="Código impresso na embalagem">
+        </label>
+        <label>
+            <span>Fornecedor</span>
+            <input name="fornecedor" maxlength="100" value="{{ request.form.get('fornecedor', lote.fornecedor if lote and lote.fornecedor else '') }}" placeholder="Empresa que forneceu este lote">
+        </label>
+        <label>
+            <span>Quantidade *</span>
+            <input type="number" name="quantidade" required min="0" value="{{ request.form.get('quantidade', lote.quantidade if lote else '') }}">
+        </label>
+        <label>
+            <span>Data de entrada *</span>
+            <input type="date" name="data_entrada" required value="{{ request.form.get('data_entrada', lote.data_entrada.isoformat() if lote else hoje) }}">
+        </label>
+        <label>
+            <span>Data de validade</span>
+            <input type="date" name="data_validade" value="{{ request.form.get('data_validade', lote.data_validade.isoformat() if lote and lote.data_validade else '') }}">
+        </label>
+    </div>
+    <div class="form-actions">
+        {% if lote and not lote.possui_vendas %}
+        <button class="button danger-button" type="submit" form="delete-lot-form">Excluir lote</button>
+        {% endif %}
+        <a class="button ghost" href="{{ url_for('lotes') }}">Cancelar</a>
+        <button class="button primary" type="submit">{{ 'Salvar lote' if lote else 'Confirmar entrada' }}</button>
+    </div>
+</form>
+{% if lote and not lote.possui_vendas %}
+<form
+    id="delete-lot-form"
+    method="post"
+    action="{{ url_for('lote_excluir', id_lote=lote.id_lote) }}"
+    data-confirm="Excluir este lote? A quantidade dele será retirada do estoque."
+></form>
+{% endif %}
+{% endblock %}

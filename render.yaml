@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: mercadofacil
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/configurar_banco.py && gunicorn app:app
+    healthCheckPath: /health
+    envVars:
+      - key: MERCADOFACIL_CREATE_DATABASE
+        value: "false"
+      - key: MERCADOFACIL_DB_SSL
+        value: "true"
+      - key: MERCADOFACIL_DB_HOST
+        sync: false
+      - key: MERCADOFACIL_DB_PORT
+        value: "4000"
+      - key: MERCADOFACIL_DB_USER
+        sync: false
+      - key: MERCADOFACIL_DB_PASSWORD
+        sync: false
+      - key: MERCADOFACIL_DB_NAME
+        sync: false
+      - key: MERCADOFACIL_ADMIN_USER
+        value: mercadofacil
+      - key: MERCADOFACIL_ADMIN_PASSWORD
+        sync: false
+      - key: MERCADOFACIL_SECURE_COOKIES
+        value: "true"
+      - key: SECRET_KEY
+        generateValue: true

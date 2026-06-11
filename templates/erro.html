@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Banco de dados indisponível | MercadoFácil{% endblock %}
+{% block content %}
+<section class="error-page">
+    <span class="error-code">Banco de dados</span>
+    <h1>Não foi possível acessar o MySQL</h1>
+    <p>Verifique se o serviço MySQL80 está iniciado e se o banco <strong>mercadofacil</strong> foi configurado.</p>
+    <details><summary>Detalhes técnicos</summary><pre>{{ detalhe }}</pre></details>
+    <a class="button primary" href="{{ url_for('dashboard') }}">Tentar novamente</a>
+</section>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Vendas | MercadoFácil{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div><p class="eyebrow">Movimentações</p><h1>Histórico de vendas</h1></div>
+    <a class="button primary" href="{{ url_for('venda_nova') }}">+ Nova venda</a>
+</div>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Venda</th><th>Data e hora</th><th>Cliente</th><th>Pagamento</th><th>Itens</th><th class="number">Total</th><th class="actions">Ações</th></tr></thead>
+            <tbody>
+            {% for venda in vendas %}
+                <tr class="{{ 'cancelled-row' if venda.status == 'cancelada' }}">
+                    <td>
+                        <strong>#{{ venda.id_venda }}</strong>
+                        <span class="badge {{ 'danger' if venda.status == 'cancelada' else 'ok' }}">
+                            {{ 'Cancelada' if venda.status == 'cancelada' else 'Concluída' }}
+                        </span>
+                    </td>
+                    <td>{{ venda.data_venda.strftime('%d/%m/%Y às %H:%M') }}</td>
+                    <td>{{ venda.cliente }}</td>
+                    <td>
+                        {{ formas_pagamento.get(venda.forma_pagamento, venda.forma_pagamento|title) }}
+                        {% if venda.forma_pagamento == 'dinheiro' and venda.troco %}
+                        <small class="cell-note">Troco: {{ venda.troco|brl }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ venda.unidades }} unidade(s) em {{ venda.tipos_itens }} produto(s)</td>
+                    <td class="number strong">{{ venda.valor_total|brl }}</td>
+                    <td class="actions">
+                        <a class="icon-action" href="{{ url_for('venda_comprovante', id_venda=venda.id_venda) }}">Comprovante</a>
+                        {% if venda.status != 'cancelada' %}
+                        <form
+                            method="post"
+                            action="{{ url_for('venda_cancelar', id_venda=venda.id_venda) }}"
+                            data-confirm="Cancelar a venda #{{ venda.id_venda }} e devolver os itens ao estoque?"
+                        >
+                            <button class="icon-action danger-text" type="submit">Cancelar</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7" class="empty-cell">Nenhuma venda registrada.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
