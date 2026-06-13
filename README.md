@@ -28,24 +28,25 @@ e registrada novamente.
 Sistema web para gerenciamento de clientes, produtos, estoque, vendas e
 fechamento diário de um pequeno mercado.
 
-O estoque é separado por lotes. Cada lote registra o código informado pelo
-fabricante, fornecedor, quantidade, data de entrada e validade. Um produto pode
-ter diversos lotes e fornecedores. Na venda, o operador escolhe o produto e
-confirma o código impresso na embalagem; somente esse lote é baixado. O lote
-com validade mais próxima aparece primeiro como orientação.
+O estoque é separado por lotes. Cada lote registra fornecedor, quantidade, data
+de entrada e validade. Um produto pode ter diversos lotes e fornecedores. Na
+venda, o operador usa o código de barras do fabricante para localizar o produto
+rapidamente. O sistema faz a baixa interna em um lote disponível, enquanto a
+conferência de lotes e validades fica no módulo de estoque/inventário.
 
 ## Leitor de código de barras
 
 O sistema possui campo de leitura rápida na tela de venda. Um leitor USB comum
 funciona como teclado: o operador posiciona o cursor no campo `Ler código de
-barras`, passa o leitor e o sistema pesquisa o cadastro.
+barras`, passa o leitor e o sistema pesquisa o cadastro do produto.
 
-- Se o código for de um lote, produto e lote são selecionados automaticamente.
-- Se o código for apenas do produto, o produto é selecionado e o operador
-  confirma o lote da embalagem.
+- O código de barras do fabricante identifica o produto.
+- Ao bipar novamente o mesmo produto, a quantidade é incrementada no carrinho.
+- O controle de lote e validade é feito pelo responsável do estoque em
+  conferências periódicas, por exemplo a cada 15 dias.
 
-Essa escolha mantém o controle de validade por lote e reduz o risco de vender o
-lote errado.
+Essa escolha deixa o caixa mais rápido e mantém o controle de validade fora do
+momento da venda, que é o fluxo mais adequado para um mercadinho pequeno.
 
 Cada produto possui um código interno global, numérico e único no formato
 `001`, `002` e assim por diante. O código é gerado automaticamente após o

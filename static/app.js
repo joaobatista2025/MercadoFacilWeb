@@ -266,6 +266,7 @@ function applyProductToRow(row, item) {
   row.querySelector(".product-picker-button small").textContent =
     "Produto selecionado · clique para trocar";
   populateLots(row, productId);
+  autoSelectFirstAvailableLot(row);
 }
 
 function writableSaleRow() {
@@ -294,36 +295,24 @@ function incrementExistingLot(lotId) {
   return true;
 }
 
+function incrementExistingProduct(productId) {
+  const existing = [...saleItems.querySelectorAll(".sale-row")].find(
+    (row) => Number(row.dataset.productId) === Number(productId),
+  );
+  if (!existing) return false;
+  const quantity = existing.querySelector(".quantity-input");
+  quantity.value = String(Number(quantity.value || 0) + 1);
+  quantity.focus();
+  quantity.select();
+  updateSale();
+  return true;
+}
+
 function handleBarcodeScan() {
   if (!barcodeScan || !saleItems || !rowTemplate) return;
   const code = normalizeScan(barcodeScan.value);
   if (!code) {
     showBarcodeFeedback("Passe o leitor USB ou digite um código.", "error");
-    return;
-  }
-
-  const lot = lotsData.find(
-    (item) => normalizeScan(item.barcode) === code || normalizeScan(item.code) === code,
-  );
-  if (lot) {
-    if (incrementExistingLot(lot.id)) {
-      showBarcodeFeedback(`Mais 1 unidade adicionada ao lote ${lot.code}.`, "success");
-      barcodeScan.value = "";
-      return;
-    }
-    const productItem = catalogItemByProductId(lot.productId);
-    if (!productItem) {
-      showBarcodeFeedback("Lote encontrado, mas o produto não está disponível para venda.", "error");
-      return;
-    }
-    const row = writableSaleRow();
-    applyProductToRow(row, productItem);
-    row.querySelector(".lot-select").value = String(lot.id);
-    row.querySelector(".quantity-input").focus();
-    row.querySelector(".quantity-input").select();
-    updateSale();
-    showBarcodeFeedback(`Lote ${lot.code} selecionado automaticamente.`, "success");
-    barcodeScan.value = "";
     return;
   }
 
@@ -333,19 +322,31 @@ function handleBarcodeScan() {
       normalizeScan(item.dataset.productCode) === code,
   );
   if (productItem) {
+    if (incrementExistingProduct(productItem.dataset.productId)) {
+      showBarcodeFeedback("Mais 1 unidade adicionada ao produto.", "success");
+      barcodeScan.value = "";
+      return;
+    }
     const row = writableSaleRow();
     applyProductToRow(row, productItem);
-    row.querySelector(".lot-select").focus();
+    row.querySelector(".quantity-input").focus();
+    row.querySelector(".quantity-input").select();
     updateSale();
     showBarcodeFeedback(
-      "Produto encontrado. Agora confirme o lote impresso na embalagem.",
+      "Produto encontrado. Baixa automatica em um lote disponivel do estoque.",
       "success",
     );
     barcodeScan.value = "";
     return;
   }
 
-  showBarcodeFeedback("Código não encontrado no cadastro de produtos ou lotes.", "error");
+  showBarcodeFeedback("Codigo nao encontrado no cadastro de produtos.", "error");
+}
+
+function autoSelectFirstAvailableLot(row) {
+  const lotSelect = row.querySelector(".lot-select");
+  const firstAvailable = [...lotSelect.options].find((option) => option.value);
+  if (firstAvailable) lotSelect.value = firstAvailable.value;
 }
 
 function populateLots(row, productId) {
@@ -357,12 +358,12 @@ function populateLots(row, productId) {
     lotSelect.disabled = true;
     return;
   }
-  lotSelect.append(new Option("Selecione o código da embalagem", ""));
+  lotSelect.append(new Option("Baixa automatica pelo estoque", ""));
   availableLots.forEach((lot, index) => {
     const expiry = lot.expiry
       ? new Date(`${lot.expiry}T12:00:00`).toLocaleDateString("pt-BR")
       : "sem validade";
-    const recommendation = index === 0 && lot.expiry ? " · validade mais próxima" : "";
+    const recommendation = index === 0 && lot.expiry ? " · baixa sugerida" : "";
     const option = new Option(
       `${lot.code} · ${lot.supplier} · ${expiry} · ${lot.stock} un.${recommendation}`,
       String(lot.id),
