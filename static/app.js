@@ -312,7 +312,7 @@ function handleBarcodeScan() {
   if (!barcodeScan || !saleItems || !rowTemplate) return;
   const code = normalizeScan(barcodeScan.value);
   if (!code) {
-    showBarcodeFeedback("Passe o leitor USB ou digite um código.", "error");
+    showBarcodeFeedback("Informe ou leia um código de produto.", "error");
     return;
   }
 
@@ -323,7 +323,7 @@ function handleBarcodeScan() {
   );
   if (productItem) {
     if (incrementExistingProduct(productItem.dataset.productId)) {
-      showBarcodeFeedback("Mais 1 unidade adicionada ao produto.", "success");
+      showBarcodeFeedback("Quantidade atualizada no carrinho.", "success");
       barcodeScan.value = "";
       return;
     }
@@ -333,14 +333,14 @@ function handleBarcodeScan() {
     row.querySelector(".quantity-input").select();
     updateSale();
     showBarcodeFeedback(
-      "Produto encontrado. Baixa automatica em um lote disponivel do estoque.",
+      "Produto adicionado ao carrinho.",
       "success",
     );
     barcodeScan.value = "";
     return;
   }
 
-  showBarcodeFeedback("Codigo nao encontrado no cadastro de produtos.", "error");
+  showBarcodeFeedback("Código não encontrado no cadastro.", "error");
 }
 
 function autoSelectFirstAvailableLot(row) {
@@ -358,12 +358,12 @@ function populateLots(row, productId) {
     lotSelect.disabled = true;
     return;
   }
-  lotSelect.append(new Option("Baixa automatica pelo estoque", ""));
+  lotSelect.append(new Option("Automático pelo estoque", ""));
   availableLots.forEach((lot, index) => {
     const expiry = lot.expiry
       ? new Date(`${lot.expiry}T12:00:00`).toLocaleDateString("pt-BR")
       : "sem validade";
-    const recommendation = index === 0 && lot.expiry ? " · baixa sugerida" : "";
+    const recommendation = index === 0 && lot.expiry ? " · sugerido" : "";
     const option = new Option(
       `${lot.code} · ${lot.supplier} · ${expiry} · ${lot.stock} un.${recommendation}`,
       String(lot.id),

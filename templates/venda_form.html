@@ -50,7 +50,7 @@
         </section>
 
         <div class="section-heading compact">
-            <div><h2>Produtos da venda</h2><p>Bipe o código do produto ou use a busca manual</p></div>
+            <div><h2>Produtos da venda</h2><p>Use o leitor ou busque no catálogo</p></div>
             <button class="button secondary" type="button" id="add-item">+ Adicionar item</button>
         </div>
 
@@ -60,7 +60,7 @@
                 <input type="search" id="barcode-scan" autocomplete="off" placeholder="Passe o leitor USB ou digite o código">
             </label>
             <button class="button secondary" type="button" id="barcode-add">Adicionar</button>
-            <p id="barcode-feedback">Use o código de barras do fabricante. O controle de lote e validade fica no estoque.</p>
+            <p id="barcode-feedback">Aguardando leitura do produto.</p>
         </section>
 
         <div id="sale-items">
@@ -73,7 +73,7 @@
                     </button>
                 </div>
                 <label class="lot-field">
-                    <span>Baixa do estoque</span>
+                    <span>Estoque</span>
                     <select name="lote_id[]" class="lot-select" required disabled>
                         <option value="">Escolha primeiro o produto</option>
                     </select>
@@ -124,7 +124,6 @@
             <strong id="summary-change">R$ 0,00</strong>
         </div>
         <button class="button primary full-button" type="submit" {% if not produtos %}disabled{% endif %}>Finalizar venda</button>
-        <p>Na venda, o sistema baixa o produto rapidamente. Lotes e validades são conferidos no estoque.</p>
     </aside>
 </form>
 
@@ -188,7 +187,7 @@
             </button>
         </div>
             <label class="lot-field">
-                <span>Baixa do estoque</span>
+                <span>Estoque</span>
                 <select name="lote_id[]" class="lot-select" required disabled>
                     <option value="">Escolha primeiro o produto</option>
                 </select>
