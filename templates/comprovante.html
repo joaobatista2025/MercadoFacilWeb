@@ -9,12 +9,8 @@
     <div class="button-group">
         <a class="button ghost" href="{{ url_for('vendas') }}">Voltar ao histórico</a>
         <button class="button ghost" type="button" onclick="window.print()">Imprimir</button>
-        <a class="button primary" href="{{ url_for('venda_comprovante_pdf', id_venda=venda.id_venda) }}">Baixar PDF</a>
-        {% if email_url %}
-        <a class="button secondary" href="{{ email_url }}">E-mail</a>
-        {% endif %}
         {% if whatsapp_url %}
-        <a class="button secondary" href="{{ whatsapp_url }}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="button primary" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Enviar WhatsApp</a>
         {% endif %}
     </div>
 </div>
@@ -88,7 +84,4 @@
     </section>
     {% endif %}
 </article>
-{% if whatsapp_url or email_url %}
-<p class="share-note">Baixe o PDF e anexe-o manualmente ao WhatsApp ou e-mail. Esse processo é gratuito e não utiliza serviços pagos.</p>
-{% endif %}
 {% endblock %}

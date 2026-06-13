@@ -5,10 +5,9 @@ o troco quando necessario e geram um comprovante simples para impressao.
 Uma venda pode ser cancelada pelo historico; nesse caso, o sistema devolve
 cada quantidade exatamente ao lote utilizado e retira a venda do faturamento.
 
-Para clientes cadastrados, o comprovante pode ser aberto no WhatsApp usando o
-telefone do cadastro ou no aplicativo de e-mail usando o endereco informado.
-O comprovante completo tambem pode ser baixado em PDF e anexado manualmente.
-Essa opcao funciona localmente e nao exige API paga, assinatura ou mensalidade.
+Para clientes cadastrados, o sistema gera uma mensagem de WhatsApp com o total
+da venda e a situacao do Clube MercadoFacil. Essa opcao funciona localmente,
+nao exige API paga, assinatura ou mensalidade.
 
 ## Clube MercadoFacil
 

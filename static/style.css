@@ -599,14 +599,6 @@ input:focus, select:focus { outline: 3px solid #d9eee3; border-color: var(--gree
 .receipt-loyalty h2 { margin: 0 0 10px; font-size: 17px; color: var(--green-dark); }
 .receipt-loyalty p { margin: 6px 0; line-height: 1.45; }
 .receipt-loyalty small { display: block; margin-top: 10px; color: var(--muted); }
-.share-note {
-  width: min(820px, 100%);
-  margin: 14px auto 0;
-  color: var(--muted);
-  font-size: 13px;
-  text-align: center;
-}
-
 .expiry-panel { margin-top: 20px; }
 .expiry-list { list-style: none; padding: 0; margin: 14px 0 0; }
 .expiry-list li {

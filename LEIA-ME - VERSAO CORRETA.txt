@@ -21,8 +21,7 @@ Ela utiliza:
 - Fechamento diario de caixa.
 - Programa de fidelidade para clientes cadastrados;
 - Cupom de R$ 15 a cada R$ 500 pagos, valido por 30 dias;
-- Comprovante em PDF gerado gratuitamente no proprio computador;
-- Atalhos para WhatsApp e e-mail, com anexo manual do PDF.
+- Mensagem de WhatsApp com total da venda e informacao do Clube MercadoFacil.
 
 O sistema NAO utiliza arquivos clientes.txt, vendas.txt ou estoque.txt para
 armazenar os dados.

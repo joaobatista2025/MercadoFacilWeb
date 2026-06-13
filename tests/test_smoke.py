@@ -262,12 +262,6 @@ class MercadoFacilSmokeTest(unittest.TestCase):
         self.assertIn(b"Comprovante", resposta.data)
         self.assertIn(b"Clube MercadoF", resposta.data)
         self.assertIn(b"https://wa.me/5585999990000", resposta.data)
-        self.assertIn(b"mailto:cliente.teste%40example.com", resposta.data)
-
-        resposta = self.client.get(f"/vendas/{self.venda_id}/comprovante.pdf")
-        self.assertEqual(resposta.status_code, 200)
-        self.assertEqual(resposta.mimetype, "application/pdf")
-        self.assertTrue(resposta.data.startswith(b"%PDF"))
 
         resposta = self.client.get("/clientes")
         self.assertEqual(resposta.status_code, 200)

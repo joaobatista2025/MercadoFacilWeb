@@ -5,7 +5,6 @@ from hmac import compare_digest
 from contextlib import contextmanager
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
-from io import BytesIO
 from urllib.parse import quote
 
 import mysql.connector
@@ -15,23 +14,10 @@ from flask import (
     redirect,
     render_template,
     request,
-    send_file,
     session,
     url_for,
 )
 from mysql.connector import Error
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-    Paragraph,
-)
 
 
 app = Flask(__name__)
@@ -1406,232 +1392,17 @@ def venda_comprovante(id_venda):
         if venda["id_cliente"] and telefone_valido
         else None
     )
-    assunto = quote(f"Comprovante MercadoFacil - Venda #{venda['id_venda']}")
-    email_url = (
-        f"mailto:{quote(venda['cliente_email'])}?subject={assunto}&body={quote(mensagem)}"
-        if venda["id_cliente"] and venda["cliente_email"]
-        else None
-    )
-
     return render_template(
         "comprovante.html",
         venda=venda,
         itens=itens,
         forma_pagamento=forma_pagamento,
         whatsapp_url=whatsapp_url,
-        email_url=email_url,
         cupons_gerados=cupons_gerados,
         cupons_disponiveis=cupons_disponiveis,
         saldo_fidelidade=saldo_fidelidade,
         faltam_fidelidade=faltam_fidelidade,
         meta_fidelidade=META_FIDELIDADE,
-    )
-
-
-@app.route("/vendas/<int:id_venda>/comprovante.pdf")
-def venda_comprovante_pdf(id_venda):
-    venda, itens, cupons_gerados, cupons_disponiveis = dados_comprovante(id_venda)
-    if not venda:
-        flash("Venda não encontrada.", "erro")
-        return redirect(url_for("vendas"))
-
-    saldo = (
-        venda["saldo_fidelidade_apos"]
-        if venda["saldo_fidelidade_apos"] is not None
-        else (venda["saldo_fidelidade_atual"] or Decimal("0.00"))
-    )
-    faltam = max(Decimal("0.00"), META_FIDELIDADE - saldo)
-    forma_pagamento = FORMAS_PAGAMENTO.get(
-        venda["forma_pagamento"],
-        venda["forma_pagamento"].title(),
-    )
-    buffer = BytesIO()
-    documento = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=18 * mm,
-        leftMargin=18 * mm,
-        topMargin=16 * mm,
-        bottomMargin=16 * mm,
-        title=f"Comprovante MercadoFacil #{id_venda}",
-    )
-    estilos = getSampleStyleSheet()
-    titulo = ParagraphStyle(
-        "TituloMercadoFacil",
-        parent=estilos["Title"],
-        fontName="Helvetica-Bold",
-        fontSize=20,
-        leading=24,
-        textColor=colors.HexColor("#176B45"),
-        alignment=TA_CENTER,
-        spaceAfter=5 * mm,
-    )
-    subtitulo = ParagraphStyle(
-        "SubtituloMercadoFacil",
-        parent=estilos["BodyText"],
-        fontSize=10,
-        leading=14,
-        textColor=colors.HexColor("#52605A"),
-        alignment=TA_CENTER,
-        spaceAfter=6 * mm,
-    )
-    normal = ParagraphStyle(
-        "NormalMercadoFacil",
-        parent=estilos["BodyText"],
-        fontSize=9,
-        leading=13,
-        textColor=colors.HexColor("#18201D"),
-    )
-    destaque = ParagraphStyle(
-        "DestaqueMercadoFacil",
-        parent=normal,
-        fontName="Helvetica-Bold",
-        fontSize=10,
-        textColor=colors.HexColor("#105337"),
-    )
-    historia = [
-        Paragraph("MercadoFácil", titulo),
-        Paragraph("Comprovante de venda", subtitulo),
-    ]
-    status = "CANCELADA" if venda["status"] == "cancelada" else "CONCLUÍDA"
-    info = [
-        ["Venda", f"#{venda['id_venda']}", "Situação", status],
-        ["Data", venda["data_venda"].strftime("%d/%m/%Y às %H:%M"), "Cliente", venda["cliente"]],
-        ["Pagamento", forma_pagamento, "", ""],
-    ]
-    tabela_info = Table(info, colWidths=[26 * mm, 52 * mm, 27 * mm, 55 * mm])
-    tabela_info.setStyle(
-        TableStyle(
-            [
-                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F3F7F5")),
-                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D6E1DB")),
-                ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#D6E1DB")),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("PADDING", (0, 0), (-1, -1), 7),
-            ]
-        )
-    )
-    historia.extend([tabela_info, Spacer(1, 6 * mm)])
-
-    dados_itens = [["Produto", "Lote", "Qtd.", "Unitário", "Subtotal"]]
-    for item in itens:
-        dados_itens.append(
-            [
-                Paragraph(f"{item['codigo']} - {item['nome']}", normal),
-                item["codigo_lote"] or "-",
-                str(item["quantidade"]),
-                moeda_brasileira(item["preco_unitario"]),
-                moeda_brasileira(item["subtotal"]),
-            ]
-        )
-    tabela_itens = Table(
-        dados_itens,
-        repeatRows=1,
-        colWidths=[70 * mm, 30 * mm, 14 * mm, 24 * mm, 26 * mm],
-    )
-    tabela_itens.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#176B45")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8.5),
-                ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#D6E1DB")),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("ALIGN", (2, 1), (-1, -1), "RIGHT"),
-                ("PADDING", (0, 0), (-1, -1), 6),
-            ]
-        )
-    )
-    historia.extend([tabela_itens, Spacer(1, 5 * mm)])
-
-    totais = []
-    if venda["desconto_fidelidade"]:
-        totais.append(["Subtotal", moeda_brasileira(venda["valor_bruto"])])
-        totais.append(
-            ["Desconto fidelidade", f"-{moeda_brasileira(venda['desconto_fidelidade'])}"]
-        )
-    totais.append(["Total", moeda_brasileira(venda["valor_total"])])
-    if venda["forma_pagamento"] == "dinheiro":
-        totais.append(["Valor recebido", moeda_brasileira(venda["valor_recebido"])])
-        totais.append(["Troco", moeda_brasileira(venda["troco"])])
-    tabela_totais = Table(totais, colWidths=[45 * mm, 35 * mm], hAlign="RIGHT")
-    tabela_totais.setStyle(
-        TableStyle(
-            [
-                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 10),
-                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-                ("LINEABOVE", (0, -1), (-1, -1), 0.7, colors.HexColor("#176B45")),
-                ("TEXTCOLOR", (0, -1), (-1, -1), colors.HexColor("#105337")),
-                ("PADDING", (0, 0), (-1, -1), 5),
-            ]
-        )
-    )
-    historia.extend([tabela_totais, Spacer(1, 6 * mm)])
-
-    if venda["id_cliente"]:
-        fidelidade = ["<b>Clube MercadoFácil</b><br/>"]
-        if venda["status"] == "cancelada":
-            fidelidade.append("Esta venda foi cancelada e não conta para a fidelidade.")
-        else:
-            if cupons_gerados:
-                validade = cupons_gerados[0]["data_validade"].strftime("%d/%m/%Y")
-                fidelidade.append(
-                    f"Parabéns! Esta compra gerou {len(cupons_gerados)} cupom(ns) "
-                    f"de R$ 15, válido(s) até {validade}.<br/>"
-                )
-            if venda["id_cupom_fidelidade"]:
-                fidelidade.append(
-                    f"Desconto utilizado nesta compra: "
-                    f"{moeda_brasileira(venda['desconto_fidelidade'])}.<br/>"
-                )
-            fidelidade.append(
-                f"Acumulado: {moeda_brasileira(saldo)} de "
-                f"{moeda_brasileira(META_FIDELIDADE)}.<br/>"
-                f"Faltam {moeda_brasileira(faltam)} para o próximo cupom.<br/>"
-            )
-            if cupons_disponiveis["total"]:
-                validade = cupons_disponiveis["proxima_validade"].strftime("%d/%m/%Y")
-                fidelidade.append(
-                    f"Cupons disponíveis: {cupons_disponiveis['total']} "
-                    f"(próxima validade: {validade}).<br/>"
-                )
-            fidelidade.append(
-                "Cada cupom vale R$ 15, por 30 dias, em compras a partir de R$ 150."
-            )
-        quadro = Table([[Paragraph("".join(fidelidade), destaque)]], colWidths=[164 * mm])
-        quadro.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#E8F4ED")),
-                    ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#A9D0B9")),
-                    ("PADDING", (0, 0), (-1, -1), 10),
-                ]
-            )
-        )
-        historia.extend([quadro, Spacer(1, 6 * mm)])
-
-    rodape = ParagraphStyle(
-        "RodapeMercadoFacil",
-        parent=normal,
-        alignment=TA_CENTER,
-        textColor=colors.HexColor("#66716C"),
-    )
-    historia.append(Paragraph("Agradecemos a preferência. Até a próxima compra!", rodape))
-    documento.build(historia)
-    buffer.seek(0)
-    return send_file(
-        buffer,
-        mimetype="application/pdf",
-        as_attachment=True,
-        download_name=f"MercadoFacil_Comprovante_{id_venda}.pdf",
     )
 
 
