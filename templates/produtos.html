@@ -9,7 +9,7 @@
 <form class="toolbar" method="get">
     <label class="search-field">
         <span>Buscar produto</span>
-        <input type="search" name="q" value="{{ busca }}" placeholder="Digite o código ou nome" data-live-table-search="#products-table">
+        <input type="search" name="q" value="{{ busca }}" placeholder="Digite o código, barras ou nome" data-live-table-search="#products-table">
     </label>
     <label class="filter-field">
         <span>Categoria</span>
@@ -41,13 +41,13 @@
             <tbody>
             {% for produto in produtos %}
                 <tr
-                    data-search="{{ produto.codigo }} {{ produto.nome }}"
+                    data-search="{{ produto.codigo }} {{ produto.codigo_barras or '' }} {{ produto.nome }}"
                     data-category="{{ produto.categoria }}"
                     data-status="{% if produto.quantidade_estoque <= produto.estoque_minimo %} estoque_baixo{% endif %}{% if produto.dias_validade is not none and produto.dias_validade < 0 %} vencido{% elif produto.dias_validade is not none and produto.dias_validade <= 30 %} vencendo{% endif %}"
                 >
                     <td>
                         <strong>{{ produto.nome }}</strong>
-                        <small class="cell-note">{{ produto.codigo }} · {{ produto.categoria }}</small>
+                        <small class="cell-note">{{ produto.codigo }} · {{ produto.categoria }}{% if produto.codigo_barras %}<br>Barras: {{ produto.codigo_barras }}{% endif %}</small>
                     </td>
                     <td>{{ produto.preco|brl }}</td>
                     <td>{{ produto.quantidade_estoque }}</td>

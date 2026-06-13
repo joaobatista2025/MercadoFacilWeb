@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS clientes (
 CREATE TABLE IF NOT EXISTS produtos (
    id_produto INT AUTO_INCREMENT PRIMARY KEY,
    codigo VARCHAR(30) NOT NULL UNIQUE,
+   codigo_barras VARCHAR(50) UNIQUE,
    categoria VARCHAR(80) NOT NULL,
    nome VARCHAR(100) NOT NULL,
    descricao VARCHAR(200),
@@ -28,12 +29,14 @@ CREATE TABLE IF NOT EXISTS lotes (
    id_lote INT AUTO_INCREMENT PRIMARY KEY,
    id_produto INT NOT NULL,
    codigo_lote VARCHAR(50) NOT NULL,
+   codigo_barras_lote VARCHAR(80),
    fornecedor VARCHAR(100),
    data_validade DATE,
    quantidade INT NOT NULL,
    data_entrada DATE NOT NULL,
    CONSTRAINT chk_lotes_quantidade CHECK (quantidade >= 0),
    CONSTRAINT uq_lote_produto UNIQUE (id_produto, codigo_lote),
+   INDEX idx_lotes_codigo_barras_lote (codigo_barras_lote),
    CONSTRAINT fk_lotes_produtos FOREIGN KEY (id_produto)
       REFERENCES produtos(id_produto) ON DELETE RESTRICT
 );

@@ -173,6 +173,98 @@ def validar_datas_lote(data_entrada, data_validade):
         raise ValueError("A validade não pode ser anterior à data de entrada.")
 
 
+def limpar_codigo_barras(valor):
+    codigo = (valor or "").strip()
+    return codigo or None
+
+
+def gerar_ean13(codigo_produto):
+    numero = re.sub(r"\D", "", str(codigo_produto))[-9:].zfill(9)
+    base = f"789{numero}"
+    soma = sum(
+        int(digito) * (1 if indice % 2 == 0 else 3)
+        for indice, digito in enumerate(base)
+    )
+    verificador = (10 - (soma % 10)) % 10
+    return f"{base}{verificador}"
+
+
+_schema_codigo_barras_pronto = False
+
+
+def garantir_colunas_codigo_barras():
+    global _schema_codigo_barras_pronto
+    if _schema_codigo_barras_pronto:
+        return
+    with banco(dictionary=False) as (conexao, cursor):
+        nome_banco = db_config()["database"]
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = %s
+              AND TABLE_NAME = 'produtos'
+              AND COLUMN_NAME = 'codigo_barras'
+            """,
+            (nome_banco,),
+        )
+        if cursor.fetchone()[0] == 0:
+            cursor.execute(
+                "ALTER TABLE produtos ADD COLUMN codigo_barras VARCHAR(50) NULL AFTER codigo"
+            )
+        cursor.execute(
+            """
+            UPDATE produtos
+            SET codigo_barras = CONCAT('789', LPAD(CAST(codigo AS UNSIGNED), 9, '0'), '0')
+            WHERE (codigo_barras IS NULL OR codigo_barras = '')
+              AND codigo REGEXP '^[0-9]+$'
+            """
+        )
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = %s
+              AND TABLE_NAME = 'lotes'
+              AND COLUMN_NAME = 'codigo_barras_lote'
+            """,
+            (nome_banco,),
+        )
+        if cursor.fetchone()[0] == 0:
+            cursor.execute(
+                "ALTER TABLE lotes ADD COLUMN codigo_barras_lote VARCHAR(80) NULL AFTER codigo_lote"
+            )
+        cursor.execute(
+            """
+            UPDATE lotes
+            SET codigo_barras_lote = codigo_lote
+            WHERE codigo_barras_lote IS NULL OR codigo_barras_lote = ''
+            """
+        )
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = %s
+              AND TABLE_NAME = 'lotes'
+              AND INDEX_NAME = 'idx_lotes_codigo_barras_lote'
+            """,
+            (nome_banco,),
+        )
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("CREATE INDEX idx_lotes_codigo_barras_lote ON lotes (codigo_barras_lote)")
+        conexao.commit()
+    _schema_codigo_barras_pronto = True
+
+
+@app.before_request
+def preparar_codigo_barras():
+    if request.endpoint in {"static", "health", "login", "logout"}:
+        return None
+    garantir_colunas_codigo_barras()
+    return None
+
+
 def sincronizar_estoque(cursor, id_produto):
     cursor.execute(
         """
@@ -376,8 +468,8 @@ def produtos():
     condicoes = []
     parametros = []
     if busca:
-        condicoes.append("(p.nome LIKE %s OR p.codigo LIKE %s)")
-        parametros.extend((f"%{busca}%", f"%{busca}%"))
+        condicoes.append("(p.nome LIKE %s OR p.codigo LIKE %s OR p.codigo_barras LIKE %s)")
+        parametros.extend((f"%{busca}%", f"%{busca}%", f"%{busca}%"))
     if categoria:
         condicoes.append("p.categoria = %s")
         parametros.append(categoria)
@@ -454,6 +546,7 @@ def produto_novo():
             preco = decimal_positivo(request.form.get("preco"), "O preço")
             minimo = inteiro_nao_negativo(request.form.get("estoque_minimo"), "O estoque mínimo")
             descricao = request.form.get("descricao", "").strip() or None
+            codigo_barras = limpar_codigo_barras(request.form.get("codigo_barras"))
 
             with banco() as (conexao, cursor):
                 conexao.start_transaction()
@@ -470,14 +563,15 @@ def produto_novo():
                 ultimo = cursor.fetchone()
                 proximo_numero = int(ultimo["codigo"]) + 1 if ultimo else 1
                 codigo = str(proximo_numero).zfill(3)
+                codigo_barras = codigo_barras or gerar_ean13(codigo)
                 cursor.execute(
                     """
                     INSERT INTO produtos
-                        (codigo, categoria, nome, descricao, preco,
+                        (codigo, codigo_barras, categoria, nome, descricao, preco,
                          quantidade_estoque, estoque_minimo, data_validade)
-                    VALUES (%s, %s, %s, %s, %s, 0, %s, NULL)
+                    VALUES (%s, %s, %s, %s, %s, %s, 0, %s, NULL)
                     """,
-                    (codigo, categoria, nome, descricao, preco, minimo),
+                    (codigo, codigo_barras, categoria, nome, descricao, preco, minimo),
                 )
                 id_produto = cursor.lastrowid
                 conexao.commit()
@@ -508,16 +602,20 @@ def produto_editar(id_produto):
             preco = decimal_positivo(request.form.get("preco"), "O preço")
             minimo = inteiro_nao_negativo(request.form.get("estoque_minimo"), "O estoque mínimo")
             descricao = request.form.get("descricao", "").strip() or None
+            codigo_barras = (
+                limpar_codigo_barras(request.form.get("codigo_barras"))
+                or gerar_ean13(produto["codigo"])
+            )
 
             with banco() as (conexao, cursor):
                 cursor.execute(
                     """
                     UPDATE produtos
-                    SET categoria = %s, nome = %s,
+                    SET categoria = %s, nome = %s, codigo_barras = %s,
                         descricao = %s, preco = %s, estoque_minimo = %s
                     WHERE id_produto = %s
                     """,
-                    (categoria, nome, descricao, preco, minimo, id_produto),
+                    (categoria, nome, codigo_barras, descricao, preco, minimo, id_produto),
                 )
                 conexao.commit()
             flash("Produto atualizado com sucesso.", "sucesso")
@@ -548,9 +646,19 @@ def lotes():
     parametros = []
     if busca:
         condicoes.append(
-            "(p.nome LIKE %s OR p.codigo LIKE %s OR l.codigo_lote LIKE %s OR l.fornecedor LIKE %s)"
+            "(p.nome LIKE %s OR p.codigo LIKE %s OR p.codigo_barras LIKE %s OR "
+            "l.codigo_lote LIKE %s OR l.codigo_barras_lote LIKE %s OR l.fornecedor LIKE %s)"
         )
-        parametros.extend((f"%{busca}%", f"%{busca}%", f"%{busca}%", f"%{busca}%"))
+        parametros.extend(
+            (
+                f"%{busca}%",
+                f"%{busca}%",
+                f"%{busca}%",
+                f"%{busca}%",
+                f"%{busca}%",
+                f"%{busca}%",
+            )
+        )
     if situacao == "ativos":
         condicoes.append("l.quantidade > 0")
     elif situacao == "vencendo":
@@ -597,6 +705,7 @@ def lote_novo():
         try:
             id_produto = int(request.form.get("id_produto", ""))
             codigo_lote = request.form.get("codigo_lote", "").strip()
+            codigo_barras_lote = limpar_codigo_barras(request.form.get("codigo_barras_lote"))
             fornecedor = request.form.get("fornecedor", "").strip() or None
             quantidade = inteiro_nao_negativo(request.form.get("quantidade"), "A quantidade")
             data_entrada = data_iso(
@@ -607,6 +716,7 @@ def lote_novo():
             data_validade = data_iso(request.form.get("data_validade"), "A validade")
             if not codigo_lote:
                 raise ValueError("O código do lote é obrigatório.")
+            codigo_barras_lote = codigo_barras_lote or codigo_lote
             if quantidade == 0:
                 raise ValueError("A quantidade recebida deve ser maior que zero.")
             validar_datas_lote(data_entrada, data_validade)
@@ -615,10 +725,19 @@ def lote_novo():
                 cursor.execute(
                     """
                     INSERT INTO lotes
-                        (id_produto, codigo_lote, fornecedor, data_validade, quantidade, data_entrada)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                        (id_produto, codigo_lote, codigo_barras_lote, fornecedor,
+                         data_validade, quantidade, data_entrada)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
-                    (id_produto, codigo_lote, fornecedor, data_validade, quantidade, data_entrada),
+                    (
+                        id_produto,
+                        codigo_lote,
+                        codigo_barras_lote,
+                        fornecedor,
+                        data_validade,
+                        quantidade,
+                        data_entrada,
+                    ),
                 )
                 sincronizar_estoque(cursor, id_produto)
                 conexao.commit()
@@ -666,6 +785,7 @@ def lote_editar(id_lote):
         try:
             id_produto = int(request.form.get("id_produto", ""))
             codigo_lote = request.form.get("codigo_lote", "").strip()
+            codigo_barras_lote = limpar_codigo_barras(request.form.get("codigo_barras_lote"))
             fornecedor = request.form.get("fornecedor", "").strip() or None
             quantidade = inteiro_nao_negativo(request.form.get("quantidade"), "A quantidade")
             data_entrada = data_iso(
@@ -676,6 +796,7 @@ def lote_editar(id_lote):
             data_validade = data_iso(request.form.get("data_validade"), "A validade")
             if not codigo_lote:
                 raise ValueError("O código do lote é obrigatório.")
+            codigo_barras_lote = codigo_barras_lote or codigo_lote
             validar_datas_lote(data_entrada, data_validade)
             if lote["possui_vendas"] and id_produto != lote["id_produto"]:
                 raise ValueError(
@@ -686,13 +807,15 @@ def lote_editar(id_lote):
                 cursor.execute(
                     """
                     UPDATE lotes
-                    SET id_produto = %s, codigo_lote = %s, fornecedor = %s,
+                    SET id_produto = %s, codigo_lote = %s, codigo_barras_lote = %s,
+                        fornecedor = %s,
                         data_validade = %s, quantidade = %s, data_entrada = %s
                     WHERE id_lote = %s
                     """,
                     (
                         id_produto,
                         codigo_lote,
+                        codigo_barras_lote,
                         fornecedor,
                         data_validade,
                         quantidade,
@@ -971,6 +1094,7 @@ def venda_nova():
             SELECT
                 p.id_produto,
                 p.codigo,
+                p.codigo_barras,
                 p.categoria,
                 p.nome,
                 p.preco,
@@ -980,7 +1104,7 @@ def venda_nova():
             JOIN lotes l ON l.id_produto = p.id_produto
             WHERE l.quantidade > 0
               AND (l.data_validade IS NULL OR l.data_validade >= CURDATE())
-            GROUP BY p.id_produto, p.codigo, p.categoria, p.nome, p.preco
+            GROUP BY p.id_produto, p.codigo, p.codigo_barras, p.categoria, p.nome, p.preco
             ORDER BY p.categoria, p.nome
             """
         )
@@ -991,6 +1115,7 @@ def venda_nova():
                 l.id_lote,
                 l.id_produto,
                 l.codigo_lote,
+                l.codigo_barras_lote,
                 l.fornecedor,
                 l.data_validade,
                 l.quantidade,

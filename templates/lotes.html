@@ -9,7 +9,7 @@
 <form class="toolbar" method="get">
     <label class="search-field">
         <span>Buscar produto ou lote</span>
-        <input type="search" name="q" value="{{ busca }}" placeholder="Produto, lote ou fornecedor">
+        <input type="search" name="q" value="{{ busca }}" placeholder="Produto, lote, barras ou fornecedor">
     </label>
     <label class="filter-field">
         <span>Situação</span>
@@ -33,7 +33,7 @@
             {% for lote in lotes %}
                 <tr>
                     <td><strong>{{ lote.produto }}</strong><small class="cell-note">{{ lote.codigo_produto }}</small></td>
-                    <td>{{ lote.codigo_lote }}</td>
+                    <td>{{ lote.codigo_lote }}{% if lote.codigo_barras_lote %}<small class="cell-note">Barras: {{ lote.codigo_barras_lote }}</small>{% endif %}</td>
                     <td>{{ lote.fornecedor or 'Não informado' }}</td>
                     <td>{{ lote.data_entrada.strftime('%d/%m/%Y') }}</td>
                     <td>{{ lote.data_validade.strftime('%d/%m/%Y') if lote.data_validade else 'Não informada' }}</td>

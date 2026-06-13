@@ -58,6 +58,7 @@ class MercadoFacilSmokeTest(unittest.TestCase):
                 "categoria": "Produtos de Teste",
                 "nome": "Produto Teste Web",
                 "descricao": "Criado pelo teste automatizado",
+                "codigo_barras": "7890009990015",
                 "preco": "12.50",
                 "estoque_minimo": "2",
             },
@@ -77,7 +78,7 @@ class MercadoFacilSmokeTest(unittest.TestCase):
             conexao.commit()
             cursor.execute(
                 """
-                SELECT id_produto, codigo
+                SELECT id_produto, codigo, codigo_barras
                 FROM produtos
                 WHERE nome = 'Produto Teste Web'
                 ORDER BY id_produto DESC
@@ -88,12 +89,14 @@ class MercadoFacilSmokeTest(unittest.TestCase):
             self.__class__.produto_id = produto_teste["id_produto"]
             self.assertTrue(produto_teste["codigo"].isdigit())
             self.assertGreaterEqual(len(produto_teste["codigo"]), 3)
+            self.assertEqual(produto_teste["codigo_barras"], "7890009990015")
 
         resposta = self.client.post(
             "/lotes/novo",
             data={
                 "id_produto": str(self.produto_id),
                 "codigo_lote": "LOTE-TESTE-01",
+                "codigo_barras_lote": "7890009990015L1",
                 "fornecedor": "Fornecedor A",
                 "quantidade": "10",
                 "data_entrada": "2026-06-09",
@@ -108,6 +111,7 @@ class MercadoFacilSmokeTest(unittest.TestCase):
             data={
                 "id_produto": str(self.produto_id),
                 "codigo_lote": "LOTE-TESTE-PROXIMO",
+                "codigo_barras_lote": "7890009990015L2",
                 "fornecedor": "Fornecedor B",
                 "quantidade": "3",
                 "data_entrada": "2026-06-09",
@@ -133,6 +137,7 @@ class MercadoFacilSmokeTest(unittest.TestCase):
             data={
                 "id_produto": str(self.produto_id),
                 "codigo_lote": "LOTE-TESTE-PROXIMO",
+                "codigo_barras_lote": "7890009990015L2",
                 "fornecedor": "Fornecedor B",
                 "quantidade": "3",
                 "data_entrada": "2026-09-01",
@@ -148,6 +153,7 @@ class MercadoFacilSmokeTest(unittest.TestCase):
             data={
                 "id_produto": str(self.produto_id),
                 "codigo_lote": "LOTE-TESTE-CORRIGIDO",
+                "codigo_barras_lote": "7890009990015L2C",
                 "fornecedor": "Fornecedor B Corrigido",
                 "quantidade": "3",
                 "data_entrada": "2026-06-09",
@@ -191,7 +197,7 @@ class MercadoFacilSmokeTest(unittest.TestCase):
             self.assertEqual(cursor.fetchone()["quantidade_estoque"], 11)
             cursor.execute(
                 """
-                SELECT codigo_lote, quantidade
+                SELECT codigo_lote, codigo_barras_lote, quantidade
                 FROM lotes
                 WHERE id_produto = %s
                 ORDER BY data_validade
@@ -200,6 +206,7 @@ class MercadoFacilSmokeTest(unittest.TestCase):
             )
             lotes = cursor.fetchall()
             self.assertEqual(lotes[0]["codigo_lote"], "LOTE-TESTE-CORRIGIDO")
+            self.assertEqual(lotes[0]["codigo_barras_lote"], "7890009990015L2C")
             self.assertEqual(lotes[0]["quantidade"], 3)
             self.assertEqual(lotes[1]["quantidade"], 8)
             cursor.execute(

@@ -61,6 +61,10 @@ const catalogCategory = document.querySelector("#catalog-category");
 const catalogItems = document.querySelectorAll(".product-catalog-item");
 const catalogEmpty = document.querySelector("#catalog-empty");
 const productCount = document.querySelector("#product-count");
+const barcodePanel = document.querySelector(".barcode-panel");
+const barcodeScan = document.querySelector("#barcode-scan");
+const barcodeAdd = document.querySelector("#barcode-add");
+const barcodeFeedback = document.querySelector("#barcode-feedback");
 const paymentMethod = document.querySelector("#payment-method");
 const cashReceivedField = document.querySelector("#cash-received-field");
 const cashReceived = document.querySelector("#cash-received");
@@ -236,6 +240,114 @@ function openCatalog(row) {
   }
 }
 
+function normalizeScan(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+function showBarcodeFeedback(message, type = "") {
+  if (!barcodeFeedback || !barcodePanel) return;
+  barcodeFeedback.textContent = message;
+  barcodePanel.classList.remove("success", "error");
+  if (type) barcodePanel.classList.add(type);
+}
+
+function catalogItemByProductId(productId) {
+  return [...catalogItems].find((item) => Number(item.dataset.productId) === Number(productId));
+}
+
+function applyProductToRow(row, item) {
+  const productId = Number(item.dataset.productId);
+  row.dataset.productId = String(productId);
+  row.querySelector(".selected-product").textContent = item.dataset.productName;
+  row.querySelector(".product-picker-button small").textContent =
+    "Produto selecionado · clique para trocar";
+  populateLots(row, productId);
+}
+
+function writableSaleRow() {
+  const emptyRow = [...saleItems.querySelectorAll(".sale-row")].find((row) => {
+    const lot = row.querySelector(".lot-select");
+    return !row.dataset.productId && !lot.value;
+  });
+  if (emptyRow) return emptyRow;
+  const fragment = rowTemplate.content.cloneNode(true);
+  const row = fragment.querySelector(".sale-row");
+  bindRow(row);
+  saleItems.appendChild(fragment);
+  return row;
+}
+
+function incrementExistingLot(lotId) {
+  const existing = [...saleItems.querySelectorAll(".sale-row")].find(
+    (row) => row.querySelector(".lot-select").value === String(lotId),
+  );
+  if (!existing) return false;
+  const quantity = existing.querySelector(".quantity-input");
+  quantity.value = String(Number(quantity.value || 0) + 1);
+  quantity.focus();
+  quantity.select();
+  updateSale();
+  return true;
+}
+
+function handleBarcodeScan() {
+  if (!barcodeScan || !saleItems || !rowTemplate) return;
+  const code = normalizeScan(barcodeScan.value);
+  if (!code) {
+    showBarcodeFeedback("Passe o leitor USB ou digite um código.", "error");
+    return;
+  }
+
+  const lot = lotsData.find(
+    (item) => normalizeScan(item.barcode) === code || normalizeScan(item.code) === code,
+  );
+  if (lot) {
+    if (incrementExistingLot(lot.id)) {
+      showBarcodeFeedback(`Mais 1 unidade adicionada ao lote ${lot.code}.`, "success");
+      barcodeScan.value = "";
+      return;
+    }
+    const productItem = catalogItemByProductId(lot.productId);
+    if (!productItem) {
+      showBarcodeFeedback("Lote encontrado, mas o produto não está disponível para venda.", "error");
+      return;
+    }
+    const row = writableSaleRow();
+    applyProductToRow(row, productItem);
+    row.querySelector(".lot-select").value = String(lot.id);
+    row.querySelector(".quantity-input").focus();
+    row.querySelector(".quantity-input").select();
+    updateSale();
+    showBarcodeFeedback(`Lote ${lot.code} selecionado automaticamente.`, "success");
+    barcodeScan.value = "";
+    return;
+  }
+
+  const productItem = [...catalogItems].find(
+    (item) =>
+      normalizeScan(item.dataset.barcode) === code ||
+      normalizeScan(item.dataset.productCode) === code,
+  );
+  if (productItem) {
+    const row = writableSaleRow();
+    applyProductToRow(row, productItem);
+    row.querySelector(".lot-select").focus();
+    updateSale();
+    showBarcodeFeedback(
+      "Produto encontrado. Agora confirme o lote impresso na embalagem.",
+      "success",
+    );
+    barcodeScan.value = "";
+    return;
+  }
+
+  showBarcodeFeedback("Código não encontrado no cadastro de produtos ou lotes.", "error");
+}
+
 function populateLots(row, productId) {
   const lotSelect = row.querySelector(".lot-select");
   const availableLots = lotsData.filter((lot) => lot.productId === productId);
@@ -302,16 +414,19 @@ document.addEventListener("keydown", (event) => {
 catalogItems.forEach((item) => {
   item.addEventListener("click", () => {
     if (!activeSaleRow) return;
-    const productId = Number(item.dataset.productId);
-    activeSaleRow.dataset.productId = String(productId);
-    activeSaleRow.querySelector(".selected-product").textContent = item.dataset.productName;
-    activeSaleRow.querySelector(".product-picker-button small").textContent =
-      "Produto selecionado · clique para trocar";
-    populateLots(activeSaleRow, productId);
+    applyProductToRow(activeSaleRow, item);
     activeSaleRow.querySelector(".lot-select").focus();
     updateSale();
     closeCatalog();
   });
+});
+
+barcodeAdd?.addEventListener("click", handleBarcodeScan);
+barcodeScan?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    handleBarcodeScan();
+  }
 });
 
 if (saleItems && addItem && rowTemplate) {

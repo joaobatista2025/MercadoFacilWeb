@@ -265,16 +265,32 @@ def main():
         cursor.execute("ALTER TABLE produtos ADD COLUMN data_validade DATE NULL")
     cursor.execute(
         """
+        SELECT COUNT(*)
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = %s
+          AND TABLE_NAME = 'produtos'
+          AND COLUMN_NAME = 'codigo_barras'
+        """,
+        (nome_banco,),
+    )
+    if cursor.fetchone()[0] == 0:
+        cursor.execute(
+            "ALTER TABLE produtos ADD COLUMN codigo_barras VARCHAR(50) NULL AFTER codigo"
+        )
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS lotes (
             id_lote INT AUTO_INCREMENT PRIMARY KEY,
             id_produto INT NOT NULL,
             codigo_lote VARCHAR(50) NOT NULL,
+            codigo_barras_lote VARCHAR(80),
             fornecedor VARCHAR(100),
             data_validade DATE,
             quantidade INT NOT NULL,
             data_entrada DATE NOT NULL,
             CONSTRAINT chk_lotes_quantidade CHECK (quantidade >= 0),
             CONSTRAINT uq_lote_produto UNIQUE (id_produto, codigo_lote),
+            INDEX idx_lotes_codigo_barras_lote (codigo_barras_lote),
             CONSTRAINT fk_lotes_produtos FOREIGN KEY (id_produto)
                 REFERENCES produtos(id_produto) ON DELETE RESTRICT
         )
@@ -292,6 +308,32 @@ def main():
     )
     if cursor.fetchone()[0] == 0:
         cursor.execute("ALTER TABLE lotes ADD COLUMN fornecedor VARCHAR(100) NULL AFTER codigo_lote")
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = %s
+          AND TABLE_NAME = 'lotes'
+          AND COLUMN_NAME = 'codigo_barras_lote'
+        """,
+        (nome_banco,),
+    )
+    if cursor.fetchone()[0] == 0:
+        cursor.execute(
+            "ALTER TABLE lotes ADD COLUMN codigo_barras_lote VARCHAR(80) NULL AFTER codigo_lote"
+        )
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = %s
+          AND TABLE_NAME = 'lotes'
+          AND INDEX_NAME = 'idx_lotes_codigo_barras_lote'
+        """,
+        (nome_banco,),
+    )
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("CREATE INDEX idx_lotes_codigo_barras_lote ON lotes (codigo_barras_lote)")
     cursor.execute(
         """
         UPDATE lotes
@@ -352,10 +394,25 @@ def main():
         executar_script(cursor, raiz / "codigos_catalogo.sql")
     cursor.execute(
         """
+        UPDATE produtos
+        SET codigo_barras = CONCAT('789', LPAD(CAST(codigo AS UNSIGNED), 9, '0'), '0')
+        WHERE (codigo_barras IS NULL OR codigo_barras = '')
+          AND codigo REGEXP '^[0-9]+$'
+        """
+    )
+    cursor.execute(
+        """
         UPDATE lotes l
         JOIN produtos p ON p.id_produto = l.id_produto
         SET l.codigo_lote = CONCAT(p.codigo, RIGHT(l.codigo_lote, 3))
         WHERE l.codigo_lote REGEXP '^PRD-[0-9]+-L[12]$'
+        """
+    )
+    cursor.execute(
+        """
+        UPDATE lotes
+        SET codigo_barras_lote = codigo_lote
+        WHERE codigo_barras_lote IS NULL OR codigo_barras_lote = ''
         """
     )
     cursor.execute(

@@ -54,6 +54,15 @@
             <button class="button secondary" type="button" id="add-item">+ Adicionar item</button>
         </div>
 
+        <section class="barcode-panel">
+            <label>
+                <span>Ler código de barras</span>
+                <input type="search" id="barcode-scan" autocomplete="off" placeholder="Passe o leitor USB ou digite o código">
+            </label>
+            <button class="button secondary" type="button" id="barcode-add">Adicionar</button>
+            <p id="barcode-feedback">Se o código for do lote, o sistema seleciona o lote automaticamente.</p>
+        </section>
+
         <div id="sale-items">
             <div class="sale-row">
                 <div class="product-picker-field">
@@ -152,8 +161,10 @@
                 class="product-catalog-item"
                 data-product-id="{{ produto.id_produto }}"
                 data-product-name="{{ produto.nome }}"
+                data-product-code="{{ produto.codigo|lower }}"
+                data-barcode="{{ (produto.codigo_barras or '')|lower }}"
                 data-category="{{ produto.categoria|lower }}"
-                data-search="{{ produto.codigo|lower }} {{ produto.nome|lower }} {{ produto.categoria|lower }}"
+                data-search="{{ produto.codigo|lower }} {{ (produto.codigo_barras or '')|lower }} {{ produto.nome|lower }} {{ produto.categoria|lower }}"
             >
                 <span>
                     <strong>{{ produto.codigo }} · {{ produto.nome }}</strong>
@@ -198,6 +209,7 @@
     "id": {{ lote.id_lote }},
     "productId": {{ lote.id_produto }},
     "code": {{ lote.codigo_lote|tojson }},
+    "barcode": {{ (lote.codigo_barras_lote or '')|tojson }},
     "supplier": {{ (lote.fornecedor or 'Não informado')|tojson }},
     "expiry": {{ (lote.data_validade.isoformat() if lote.data_validade else '')|tojson }},
     "stock": {{ lote.quantidade }},

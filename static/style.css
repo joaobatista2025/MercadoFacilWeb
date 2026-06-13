@@ -386,6 +386,25 @@ input:focus, select:focus { outline: 3px solid #d9eee3; border-color: var(--gree
   padding: 14px 0;
   border-top: 1px solid var(--line);
 }
+.barcode-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 14px;
+  border: 1px solid #cfe2d7;
+  border-radius: 6px;
+  background: #f5fbf7;
+}
+.barcode-panel p {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.barcode-panel.success p { color: var(--green-dark); font-weight: 700; }
+.barcode-panel.error p { color: var(--red); font-weight: 700; }
 .product-picker-field > span {
   display: block;
   color: #4f5b56;

@@ -15,6 +15,10 @@
             <span>Código do produto</span>
             <input value="{{ produto.codigo if produto else 'Gerado automaticamente ao salvar' }}" disabled>
         </label>
+        <label>
+            <span>Código de barras</span>
+            <input name="codigo_barras" maxlength="50" inputmode="numeric" value="{{ request.form.get('codigo_barras', produto.codigo_barras if produto and produto.codigo_barras else '') }}" placeholder="Gerado automaticamente se vazio">
+        </label>
         <label class="wide">
             <span>Categoria *</span>
             <input name="categoria" required maxlength="80" list="categorias-produto" value="{{ request.form.get('categoria', produto.categoria if produto else '') }}" placeholder="Ex.: Mercearia e Básicos">

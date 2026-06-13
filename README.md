@@ -34,6 +34,19 @@ ter diversos lotes e fornecedores. Na venda, o operador escolhe o produto e
 confirma o código impresso na embalagem; somente esse lote é baixado. O lote
 com validade mais próxima aparece primeiro como orientação.
 
+## Leitor de código de barras
+
+O sistema possui campo de leitura rápida na tela de venda. Um leitor USB comum
+funciona como teclado: o operador posiciona o cursor no campo `Ler código de
+barras`, passa o leitor e o sistema pesquisa o cadastro.
+
+- Se o código for de um lote, produto e lote são selecionados automaticamente.
+- Se o código for apenas do produto, o produto é selecionado e o operador
+  confirma o lote da embalagem.
+
+Essa escolha mantém o controle de validade por lote e reduz o risco de vender o
+lote errado.
+
 Cada produto possui um código interno global, numérico e único no formato
 `001`, `002` e assim por diante. O código é gerado automaticamente após o
 último número cadastrado. A categoria serve apenas para organização e filtros.

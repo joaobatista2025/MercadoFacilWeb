@@ -32,6 +32,10 @@
             <input name="codigo_lote" required maxlength="50" value="{{ request.form.get('codigo_lote', lote.codigo_lote if lote else '') }}" placeholder="Código impresso na embalagem">
         </label>
         <label>
+            <span>Código de barras do lote</span>
+            <input name="codigo_barras_lote" maxlength="80" value="{{ request.form.get('codigo_barras_lote', lote.codigo_barras_lote if lote and lote.codigo_barras_lote else '') }}" placeholder="Opcional; use a etiqueta do lote">
+        </label>
+        <label>
             <span>Fornecedor</span>
             <input name="fornecedor" maxlength="100" value="{{ request.form.get('fornecedor', lote.fornecedor if lote and lote.fornecedor else '') }}" placeholder="Empresa que forneceu este lote">
         </label>
