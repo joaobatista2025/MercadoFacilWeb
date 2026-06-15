@@ -25,6 +25,11 @@
         <strong>{{ total_produtos }}</strong>
         <small>itens no catálogo</small>
     </article>
+    <article class="metric">
+        <span>Valor em estoque</span>
+        <strong>{{ valor_estoque|brl }}</strong>
+        <small>preço de venda x quantidade</small>
+    </article>
     <article class="metric {{ 'warning' if baixo_estoque else '' }}">
         <span>Estoque baixo</span>
         <strong>{{ baixo_estoque }}</strong>

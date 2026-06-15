@@ -390,6 +390,13 @@ def dashboard():
         total_produtos = cursor.fetchone()["total"]
         cursor.execute(
             """
+            SELECT COALESCE(SUM(quantidade_estoque * preco), 0) AS valor_total
+            FROM produtos
+            """
+        )
+        valor_estoque = cursor.fetchone()["valor_total"]
+        cursor.execute(
+            """
             SELECT
                 v.id_venda,
                 v.data_venda,
@@ -439,6 +446,7 @@ def dashboard():
         resumo=resumo,
         baixo_estoque=baixo_estoque,
         total_produtos=total_produtos,
+        valor_estoque=valor_estoque,
         vendas_recentes=vendas_recentes,
         alertas=alertas,
         validade_alertas=validade_alertas,
@@ -497,7 +505,8 @@ def produtos():
                 SELECT COUNT(*)
                 FROM lotes l3
                 WHERE l3.id_produto = p.id_produto AND l3.quantidade > 0
-            ) AS total_lotes
+            ) AS total_lotes,
+            (p.quantidade_estoque * p.preco) AS valor_estoque
         FROM produtos p
     """
     if condicoes:
@@ -507,11 +516,17 @@ def produtos():
     with banco() as (_, cursor):
         cursor.execute(consulta, tuple(parametros))
         lista = cursor.fetchall()
+        estoque_resumo = {
+            "produtos": len(lista),
+            "unidades": sum((item["quantidade_estoque"] or 0) for item in lista),
+            "valor_total": sum((item["valor_estoque"] or 0) for item in lista),
+        }
         cursor.execute("SELECT DISTINCT categoria FROM produtos ORDER BY categoria")
         categorias = [linha["categoria"] for linha in cursor.fetchall()]
     return render_template(
         "produtos.html",
         produtos=lista,
+        estoque_resumo=estoque_resumo,
         busca=busca,
         categoria=categoria,
         categorias=categorias,

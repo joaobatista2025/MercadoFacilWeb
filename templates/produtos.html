@@ -32,11 +32,34 @@
     {% if busca or categoria or situacao %}<a class="button ghost" href="{{ url_for('produtos') }}">Limpar</a>{% endif %}
 </form>
 
+<section class="metrics" aria-label="Resumo do estoque">
+    <article class="metric">
+        <span>Relatório de estoque</span>
+        <strong>{{ estoque_resumo.produtos }}</strong>
+        <small>produtos na listagem atual</small>
+    </article>
+    <article class="metric">
+        <span>Unidades em estoque</span>
+        <strong>{{ estoque_resumo.unidades }}</strong>
+        <small>soma das quantidades disponíveis</small>
+    </article>
+    <article class="metric">
+        <span>Valor em estoque</span>
+        <strong>{{ estoque_resumo.valor_total|brl }}</strong>
+        <small>preço de venda x quantidade</small>
+    </article>
+    <article class="metric action-metric">
+        <span>Relatório</span>
+        <button class="button ghost" type="button" onclick="window.print()">Imprimir</button>
+        <small>use os filtros antes de imprimir</small>
+    </article>
+</section>
+
 <section class="panel">
     <div class="table-wrap">
         <table id="products-table">
             <thead>
-                <tr><th>Produto</th><th>Preço</th><th>Estoque</th><th>Lotes</th><th>Próxima validade</th><th>Status</th><th class="actions">Ações</th></tr>
+                <tr><th>Produto</th><th>Preço</th><th>Estoque</th><th>Valor em estoque</th><th>Lotes</th><th>Próxima validade</th><th>Status</th><th class="actions">Ações</th></tr>
             </thead>
             <tbody>
             {% for produto in produtos %}
@@ -51,6 +74,7 @@
                     </td>
                     <td>{{ produto.preco|brl }}</td>
                     <td>{{ produto.quantidade_estoque }}</td>
+                    <td>{{ produto.valor_estoque|brl }}</td>
                     <td>{{ produto.total_lotes }}</td>
                     <td>
                         {% if not produto.proxima_validade %}
@@ -79,9 +103,9 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="7" class="empty-cell">Nenhum produto encontrado.</td></tr>
+                <tr><td colspan="8" class="empty-cell">Nenhum produto encontrado.</td></tr>
             {% endfor %}
-                <tr id="products-empty-live" hidden><td colspan="7" class="empty-cell">Nenhum produto corresponde à pesquisa.</td></tr>
+                <tr id="products-empty-live" hidden><td colspan="8" class="empty-cell">Nenhum produto corresponde à pesquisa.</td></tr>
             </tbody>
         </table>
     </div>
